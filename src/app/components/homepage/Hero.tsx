@@ -1,0 +1,264 @@
+"use client";
+import React, { useMemo, useState } from "react";
+import Link from "next/link";
+import { Search, TrendingUp, Users, Star, Shield, Clock, CheckCircle } from "lucide-react";
+
+export default function HeroSection() {
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
+
+  const features = [
+    { icon: <Shield className="w-5 h-5" />, text: "Verified Professionals" },
+    { icon: <Clock className="w-5 h-5" />, text: "Quick Response" },
+    { icon: <CheckCircle className="w-5 h-5" />, text: "Quality Guaranteed" },
+  ];
+
+  return (
+    <section className="position-relative min-vh-100 d-flex align-items-center justify-content-center overflow-hidden bg-white">
+      {/* Enhanced Background */}
+      <div className="position-absolute top-0 start-0 w-100 h-100 pointer-events-none">
+        {/* Main gradient background */}
+        <div className="position-absolute top-0 start-0 w-100 h-100 bg-gradient-to-br from-blue-50 via-white to-emerald-50" />
+        
+        {/* Subtle geometric patterns */}
+        <div className="position-absolute top-0 start-0 w-100 h-100 opacity-5">
+          <div className="position-absolute top-10 start-10 w-32 h-32 border-2 border-blue-200 rounded-full" />
+          <div className="position-absolute bottom-20 end-20 w-24 h-24 border-2 border-emerald-200 rounded-full" />
+          <div className="position-absolute top-1/3 end-1/4 w-16 h-16 border-2 border-blue-200 rounded-full" />
+        </div>
+
+        {/* Subtle gradient orbs */}
+        <div className="position-absolute top-10 end-10 w-64 h-64 bg-blue-100 rounded-full opacity-20 blur-3xl" />
+        <div className="position-absolute bottom-10 start-10 w-48 h-48 bg-emerald-100 rounded-full opacity-30 blur-3xl" />
+        <div className="position-absolute top-1/2 start-1/2 w-32 h-32 bg-purple-100 rounded-full opacity-20 blur-2xl" />
+      </div>
+
+      {/* Content */}
+      <div className="container position-relative text-center">
+        {/* Headline */}
+        <div className="mb-5">
+          <div className="d-inline-flex align-items-center gap-2 mb-4 px-3 py-2 bg-blue-50 rounded-pill border border-blue-100">
+            <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
+            <span className="text-blue-600 text-sm fw-semibold">
+              Trusted by 50,000+ Customers
+            </span>
+          </div>
+          
+          <h1 className="display-4 fw-bold mb-4 text-gray-900">
+            Find Your Perfect
+            <span className="d-block text-gradient mt-2">Service Professional</span>
+          </h1>
+
+          {/* Subtitle */}
+          <p
+            className="lead text-gray-600 mb-5 mx-auto fs-5"
+            style={{ maxWidth: "600px", lineHeight: "1.6" }}
+          >
+            Connect with verified experts for all your home and business needs. 
+            Quality service guaranteed, with professionals ready to help.
+          </p>
+        </div>
+
+        {/* Features */}
+        <div className="d-flex justify-content-center gap-4 mb-5 flex-wrap">
+          {features.map((feature, index) => (
+            <div key={index} className="d-flex align-items-center gap-2 text-gray-600">
+              <div className="d-flex align-items-center justify-content-center w-8 h-8 bg-blue-100 rounded-circle">
+                {feature.icon}
+              </div>
+              <span className="fw-medium text-sm">{feature.text}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* Enhanced Search Bar */}
+        <div
+          className={`mx-auto mb-6 transition-all duration-300 ${
+            isSearchFocused ? "scale-105" : ""
+          }`}
+          style={{ maxWidth: "600px" }}
+        >
+          <div className="position-relative">
+            <div className="input-group input-group-lg shadow-lg rounded-pill overflow-hidden border-0">
+              <span className="input-group-text bg-white border-0 ps-4">
+                <Search className="text-gray-400" size={20} />
+              </span>
+              <input
+                type="text"
+                className="form-control border-0 ps-0 fs-6"
+                placeholder="What service do you need? (e.g., plumber, electrician, cleaner)"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onFocus={() => setIsSearchFocused(true)}
+                onBlur={() => setIsSearchFocused(false)}
+                onKeyPress={(e) => {
+                  if (e.key === "Enter" && searchQuery.trim()) {
+                    console.log("Searching for:", searchQuery);
+                  }
+                }}
+                style={{ 
+                  height: "60px",
+                  background: "linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)"
+                }}
+              />
+              <button
+                onClick={() => searchQuery.trim() && console.log("Searching for:", searchQuery)}
+                className="btn btn-primary px-4 fw-semibold border-0"
+                style={{ 
+                  background: "linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%)",
+                  minWidth: "120px"
+                }}
+                disabled={!searchQuery.trim()}
+              >
+                Search
+              </button>
+            </div>
+            
+            {/* Search suggestions */}
+            {isSearchFocused && (
+              <div className="position-absolute top-100 start-0 end-0 mt-2 bg-white rounded-2xl shadow-xl border border-gray-100 py-3 z-10">
+                <div className="text-start px-3">
+                  <div className="text-xs text-gray-500 fw-semibold mb-2 px-3">POPULAR SERVICES</div>
+                  {["Plumbing", "Electrical", "Cleaning", "Painting", "Carpentry"].map((service) => (
+                    <div 
+                      key={service}
+                      className="px-3 py-2 hover-bg-gray-50 rounded cursor-pointer d-flex align-items-center gap-2"
+                      onClick={() => setSearchQuery(service)}
+                    >
+                      <Search className="text-gray-400" size={16} />
+                      <span className="text-gray-700">{service}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Enhanced Stats */}
+        <div className="row g-4 justify-content-center mb-5">
+          <div className="col-md-4">
+            <div className="card h-100 border-0 text-center p-4 bg-transparent">
+              <div className="mb-3">
+                <div
+                  className="d-inline-flex align-items-center justify-content-center bg-blue-50 rounded-3"
+                  style={{ width: "80px", height: "80px" }}
+                >
+                  <Users size={32} className="text-blue-600" />
+                </div>
+              </div>
+              <h3 className="fw-bold text-gray-900 mb-2">10,000+</h3>
+              <p className="text-gray-600 mb-0">Verified Professionals</p>
+            </div>
+          </div>
+          <div className="col-md-4">
+            <div className="card h-100 border-0 text-center p-4 bg-transparent">
+              <div className="mb-3">
+                <div
+                  className="d-inline-flex align-items-center justify-content-center bg-emerald-50 rounded-3"
+                  style={{ width: "80px", height: "80px" }}
+                >
+                  <TrendingUp size={32} className="text-emerald-600" />
+                </div>
+              </div>
+              <h3 className="fw-bold text-gray-900 mb-2">50,000+</h3>
+              <p className="text-gray-600 mb-0">Jobs Completed</p>
+            </div>
+          </div>
+          <div className="col-md-4">
+            <div className="card h-100 border-0 text-center p-4 bg-transparent">
+              <div className="mb-3">
+                <div
+                  className="d-inline-flex align-items-center justify-content-center bg-amber-50 rounded-3"
+                  style={{ width: "80px", height: "80px" }}
+                >
+                  <Star size={32} className="text-amber-600" fill="currentColor" />
+                </div>
+              </div>
+              <h3 className="fw-bold text-gray-900 mb-2">4.9/5</h3>
+              <p className="text-gray-600 mb-0">Customer Rating</p>
+            </div>
+          </div>
+        </div>
+
+        {/* CTA Buttons */}
+        <div className="d-flex flex-column flex-sm-row justify-content-center gap-3 mt-4">
+          <Link 
+            href="/categories" 
+            className="btn btn-primary btn-lg px-5 py-3 fw-semibold rounded-pill shadow-lg hover-lift"
+            style={{ 
+              background: "linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%)",
+              border: "none",
+              minWidth: "180px"
+            }}
+          >
+            Book a Service
+          </Link>
+          <Link 
+            href="/auth/register/serviceman" 
+            className="btn btn-outline-primary btn-lg px-5 py-3 fw-semibold rounded-pill border-2 hover-lift"
+            style={{ minWidth: "180px" }}
+          >
+            Become a Provider
+          </Link>
+        </div>
+      </div>
+
+      <style jsx global>{`
+        .text-gradient {
+          background: linear-gradient(135deg, #0d6efd 0%, #20c997 100%);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+        }
+        
+        .hover-bg-gray-50:hover {
+          background-color: #f9fafb;
+        }
+        
+        .hover-lift {
+          transition: all 0.3s ease;
+        }
+        
+        .hover-lift:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 12px 25px rgba(0,0,0,0.15);
+        }
+        
+        .blur-2xl {
+          filter: blur(40px);
+        }
+        
+        .blur-3xl {
+          filter: blur(60px);
+        }
+        
+        /* Smooth focus states */
+        .form-control:focus {
+          box-shadow: none;
+          background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+        }
+        
+        /* Custom scrollbar for suggestions */
+        .suggestions-container {
+          scrollbar-width: thin;
+          scrollbar-color: #cbd5e1 #f1f5f9;
+        }
+        
+        .suggestions-container::-webkit-scrollbar {
+          width: 6px;
+        }
+        
+        .suggestions-container::-webkit-scrollbar-track {
+          background: #f1f5f9;
+          border-radius: 3px;
+        }
+        
+        .suggestions-container::-webkit-scrollbar-thumb {
+          background: #cbd5e1;
+          border-radius: 3px;
+        }
+      `}</style>
+    </section>
+  );
+}
