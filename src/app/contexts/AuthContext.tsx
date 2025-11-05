@@ -34,33 +34,55 @@ export function AuthProvider({ children }: AuthProviderProps) {
         const tokens = authService.getTokens();
 
         if (!tokens.accessToken) {
+          console.log('🔓 [AuthContext] No access token found - user not logged in');
           setUser(null);
           setLoading(false);
           return;
         }
 
+        console.log('🔑 [AuthContext] Access token found - verifying authentication...');
         const isAuthenticated = authService.isAuthenticated();
         
         if (isAuthenticated) {
           // Try to fetch user data if we have tokens
           try {
+            console.log('👤 [AuthContext] Fetching user profile...');
             const userData = await userProfileService.getCurrentUser();
+            console.log('✅ [AuthContext] User authenticated:', userData.username, `(${userData.user_type})`);
+            
             setUser({
               id: userData.id,
               email: userData.email,
               user_type: userData.user_type,
               isAuthenticated: true
             });
-          } catch (error) {
-            // If we can't fetch user data, logout
-            console.error('Failed to fetch user data:', error);
-            authService.logout();
-            setUser(null);
+          } catch (error: any) {
+            // Only logout if it's an authentication error (401)
+            if (error.response?.status === 401) {
+              console.warn('⚠️ [AuthContext] Token expired or invalid - logging out');
+              authService.logout();
+              setUser(null);
+            } else {
+              // For other errors (network, 500, etc.), keep a minimal user state
+              // This prevents redirect loops on network issues
+              console.error('❌ [AuthContext] Failed to fetch user data (non-auth error):', error.message);
+              console.log('ℹ️ [AuthContext] Keeping tokens and minimal auth state - will retry on next page load');
+              
+              // Set minimal user state to keep isAuthenticated true
+              setUser({
+                id: 0,
+                email: 'loading@temp.com',
+                user_type: 'CLIENT', // Default, will be updated on successful fetch
+                isAuthenticated: true // Keep authenticated status
+              });
+            }
           }
         } else {
+          console.log('🔓 [AuthContext] Not authenticated');
           setUser(null);
         }
       } catch (error) {
+        console.error('❌ [AuthContext] Unexpected error during auth check:', error);
         setUser(null);
       } finally {
         setLoading(false);

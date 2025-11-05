@@ -78,10 +78,12 @@ export default function ServicemanListItem({ serviceman }: Props) {
           </div>
 
           {/* Name and Rating */}
-          <div className="flex-grow-1 ms-3">
+          <div className="flex-grow-1 ms-3" style={{ minWidth: 0 }}>
             <div className="d-flex align-items-center justify-content-between mb-1">
-              <h5 className="mb-0 fw-bold text-dark">{full_name}</h5>
-              <span className={`badge bg-${getRatingColor(rating)} rounded-pill rating-badge`}>
+              <h5 className="mb-0 fw-bold text-dark text-truncate me-2" style={{ maxWidth: '200px' }}>
+                {full_name}
+              </h5>
+              <span className={`badge bg-${getRatingColor(rating)} rounded-pill rating-badge flex-shrink-0`}>
                 {rating.toFixed(1)} ★
               </span>
             </div>

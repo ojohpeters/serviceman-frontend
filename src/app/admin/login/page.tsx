@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { authService } from '../../services/auth';
 import { useAuth } from '../../contexts/AuthContext';
@@ -13,7 +13,21 @@ export default function AdminLoginPage() {
   const [error, setError] = useState('');
   const router = useRouter();
   const { login: authContextLogin } = useAuth();
-  const { refreshUser } = useUser(); // Add this to refresh user data
+  const { user, loading: userLoading, refreshUser } = useUser();
+
+  // Redirect already logged-in users to their dashboard
+  useEffect(() => {
+    // Only redirect if we're sure user is logged in (not during loading or minimal state)
+    if (!userLoading && user && user.id !== 0) {
+      console.log('🔄 [Admin Login] User already logged in, redirecting to dashboard');
+      const dashboardUrl = user.user_type === 'ADMIN' 
+        ? '/admin/dashboard' 
+        : user.user_type === 'SERVICEMAN'
+        ? '/dashboard/worker'
+        : '/dashboard/client';
+      router.push(dashboardUrl);
+    }
+  }, [user, userLoading, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

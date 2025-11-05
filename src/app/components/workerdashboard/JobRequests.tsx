@@ -1,6 +1,7 @@
 import React from "react";
 import { ServiceRequest } from "../../services/serviceRequests";
 import { useRouter } from "next/navigation";
+import { getStatusConfig } from "../../utils/statusHelpers";
 
 interface JobRequestsProps {
   serviceRequests: ServiceRequest[];
@@ -10,22 +11,14 @@ interface JobRequestsProps {
 export default function JobRequests({ serviceRequests, loading = false }: JobRequestsProps): React.ReactElement {
   const router = useRouter();
 
-  // Helper function to get status display info
+  // Helper function to get status display info using centralized config
   const getStatusInfo = (status: string) => {
-    switch (status) {
-      case 'PENDING_PAYMENT':
-        return { class: "bg-warning text-dark", text: "Pending Payment", actionable: false };
-      case 'ASSIGNED_TO_SERVICEMAN':
-        return { class: "bg-info text-dark", text: "Assigned - Needs Estimate", actionable: true };
-      case 'IN_PROGRESS':
-        return { class: "bg-primary", text: "In Progress", actionable: false };
-      case 'COMPLETED':
-        return { class: "bg-success", text: "Completed", actionable: false };
-      case 'CANCELLED':
-        return { class: "bg-secondary", text: "Cancelled", actionable: false };
-      default:
-        return { class: "bg-secondary", text: status, actionable: false };
-    }
+    const config = getStatusConfig(status);
+    return { 
+      class: config.badgeClass, 
+      text: config.label, 
+      actionable: config.isActionRequired 
+    };
   };
 
   // Format date for display

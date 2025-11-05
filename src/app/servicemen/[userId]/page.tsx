@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import { userProfileService } from "../../services/userProfile";
 import { serviceRequestsService } from "../../services/serviceRequests";
 import { paymentsService } from "../../services/payments";
-import type { CreateServiceRequestData } from "../../types/api";
+import type { CreateServiceRequestData, ServicemanProfile } from "../../types/api";
 import { useAuth } from "../../contexts/AuthContext";
 import Nav from "../../components/common/Nav";
 import SecondFooter from "../../components/common/SecondFooter";
@@ -14,34 +14,14 @@ interface PageProps {
   params: Promise<{ userId: string }>;
 }
 
-// Public serviceman profile interface
-interface PublicServicemanProfile {
-  user: number;
-  full_name?: string;
-  username?: string;
-  email?: string;
-  phone_number?: string;
-  category?: number | { id: number; name: string };
-  category_name?: string;
-  skills: Array<{ id: number; name: string; category: string }>;
-  rating?: string;
-  bio?: string;
-  years_of_experience?: number;
-  total_jobs_completed?: number;
-  is_available?: boolean;
-  active_jobs_count?: number;
-  booking_warning?: {
-    message: string;
-    show_warning: boolean;
-  } | null;
-  created_at?: string;
-}
+// Note: Using ServicemanProfile from API types
+// This matches the backend API response structure
 
 export default function ServicemanPublicProfilePage({ params }: PageProps) {
   const { userId } = React.use(params);
   const router = useRouter();
   const { user } = useAuth(); // Get current logged-in user
-  const [profile, setProfile] = useState<PublicServicemanProfile | null>(null);
+  const [profile, setProfile] = useState<ServicemanProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showBookingModal, setShowBookingModal] = useState(false);
@@ -66,7 +46,8 @@ export default function ServicemanPublicProfilePage({ params }: PageProps) {
         const data = await userProfileService.getPublicServicemanProfile(
           Number(userId)
         );
-        if (isMounted) setProfile(data as PublicServicemanProfile);
+        console.log('📦 [Serviceman Profile] Received data:', data);
+        if (isMounted) setProfile(data);
       } catch (e: any) {
         if (isMounted) setError(e?.message || "Failed to load profile");
       } finally {
@@ -194,10 +175,57 @@ export default function ServicemanPublicProfilePage({ params }: PageProps) {
     return date.toISOString().slice(0, 16);
   };
 
-  // Fallback for missing full_name
+  // Get display name from user object or fallback
   const getDisplayName = () => {
-    if (profile?.full_name) return profile.full_name;
+    if (!profile) return "Service Professional";
+    
+    // Debug log to see what we have
+    console.log('🔍 [Name Debug] Profile user:', profile.user);
+    console.log('🔍 [Name Debug] Profile user type:', typeof profile.user);
+    console.log('🔍 [Name Debug] Full profile:', profile);
+    
+    // If user is just a number (ID), we can't get the name
+    if (typeof profile.user === 'number') {
+      console.warn('⚠️ [Name] User is just an ID:', profile.user);
+      console.warn('⚠️ [Name] Backend should return full user object, not just ID');
+      console.warn('⚠️ [Name] Contact backend team to fix this endpoint');
+      return "Service Professional";
+    }
+    
+    // Try to get name from user object (when it's an object)
+    if (profile.user && typeof profile.user === 'object') {
+      const user = profile.user as any;
+      
+      // Try multiple fields
+      const possibleNames = [
+        user.full_name,
+        user.username,
+        user.first_name && user.last_name ? `${user.first_name} ${user.last_name}` : null,
+        user.first_name,
+        user.last_name
+      ].filter(Boolean);
+      
+      if (possibleNames.length > 0) {
+        console.log('✅ [Name] Using name:', possibleNames[0]);
+        return possibleNames[0];
+      }
+      
+      console.warn('⚠️ [Name] User object exists but has no name fields:', user);
+    }
+    
+    console.warn('⚠️ [Name] Using fallback - no name found in profile');
     return "Service Professional";
+  };
+
+  // Get category name
+  const getCategoryName = () => {
+    if (!profile) return "Professional Service Provider";
+    
+    if (profile.category && typeof profile.category === 'object') {
+      return profile.category.name;
+    }
+    
+    return "Professional Service Provider";
   };
 
   // Add Bootstrap Icons
@@ -291,11 +319,45 @@ export default function ServicemanPublicProfilePage({ params }: PageProps) {
 
         {/* Profile Content */}
         {!loading && !error && profile && (
-          <div className="row g-4">
-            {/* Left Column - Profile Info */}
-            <div className="col-12 col-lg-8">
-              <div className="card shadow-sm border-0">
-                <div className="card-body p-4">
+          <>
+            {/* Backend Warning - Only shows if user is just an ID */}
+            {typeof profile.user === 'number' && (
+              <div className="alert alert-danger border-0 shadow-sm mb-4" role="alert">
+                <div className="d-flex align-items-start">
+                  <i className="bi bi-exclamation-triangle-fill fs-4 me-3"></i>
+                  <div className="flex-grow-1">
+                    <h5 className="alert-heading mb-2">⚠️ Backend API Issue Detected</h5>
+                    <p className="mb-2">
+                      <strong>Problem:</strong> The backend is returning <code>user: {String(profile.user)}</code> (just an ID) 
+                      instead of a full user object.
+                    </p>
+                    <p className="mb-2">
+                      <strong>Impact:</strong> Cannot display serviceman's real name, showing "Service Professional" as fallback.
+                    </p>
+                    <hr className="my-2" />
+                    <small className="mb-0">
+                      <strong>Backend Team:</strong> Please update <code>/users/servicemen/{'{id}'}/</code> endpoint to return:
+                      <pre className="mt-2 mb-0 p-2 bg-dark text-light rounded" style={{ fontSize: '0.75rem' }}>
+{`{
+  "user": {
+    "id": ${profile.user},
+    "username": "...",
+    "full_name": "...",
+    "email": "..."
+  }
+}`}
+                      </pre>
+                    </small>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            <div className="row g-4">
+              {/* Left Column - Profile Info */}
+              <div className="col-12 col-lg-8">
+                <div className="card shadow-sm border-0">
+                  <div className="card-body p-4">
                   {/* Profile Header */}
                   <div className="d-flex align-items-start mb-4">
                     <div className="flex-shrink-0">
@@ -314,7 +376,7 @@ export default function ServicemanPublicProfilePage({ params }: PageProps) {
                       >
                         {getDisplayName()
                           .split(" ")
-                          .map((n) => n[0])
+                          .map((n: string) => n[0])
                           .join("")
                           .toUpperCase() || "SP"}
                       </div>
@@ -325,25 +387,25 @@ export default function ServicemanPublicProfilePage({ params }: PageProps) {
                           <h1 className="h2 fw-bold text-dark mb-1">
                             {getDisplayName()}
                           </h1>
-                          <p className="text-muted mb-2">
-                            {profile.category_name ||
-                              "Professional Service Provider"}
+                          <p className="text-muted mb-2" style={{ color: '#6c757d !important' }}>
+                            {getCategoryName()}
                           </p>
                           <div className="d-flex align-items-center gap-3 flex-wrap">
                             <div className="d-flex align-items-center">
                               <i className="bi bi-star-fill text-warning me-1"></i>
-                              <span className="fw-bold text-dark">
-                                {profile.rating}
+                              <span className="fw-bold" style={{ color: '#212529' }}>
+                                {profile.rating || '0.0'}
                               </span>
-                              <span className="text-muted ms-1">
-                                ({profile.total_jobs_completed} jobs)
+                              <span className="ms-1" style={{ color: '#6c757d' }}>
+                                ({profile.total_jobs_completed || 0} jobs)
                               </span>
                             </div>
                             <div className="d-flex align-items-center">
                               <i className="bi bi-briefcase text-primary me-1"></i>
-                              <span className="text-muted">
-                                {profile.years_of_experience ?? 0} years
-                                experience
+                              <span style={{ color: '#6c757d' }}>
+                                {profile.years_of_experience !== null && profile.years_of_experience !== undefined 
+                                  ? `${profile.years_of_experience} year${profile.years_of_experience !== 1 ? 's' : ''} experience`
+                                  : 'Experience not specified'}
                               </span>
                             </div>
                           </div>
@@ -361,13 +423,13 @@ export default function ServicemanPublicProfilePage({ params }: PageProps) {
 
                   {/* Bio Section */}
                   <div className="mb-4">
-                    <h5 className="fw-bold text-dark mb-3">
+                    <h5 className="fw-bold mb-3" style={{ color: '#212529' }}>
                       <i className="bi bi-person-badge me-2 text-primary"></i>
                       About Me
                     </h5>
                     <p
-                      className="text-muted mb-0"
-                      style={{ lineHeight: "1.6", fontSize: "1.05rem" }}
+                      className="mb-0"
+                      style={{ lineHeight: "1.6", fontSize: "1.05rem", color: '#495057' }}
                     >
                       {profile.bio ||
                         `Hi, I'm ${getDisplayName()}, a dedicated professional with ${
@@ -380,71 +442,91 @@ export default function ServicemanPublicProfilePage({ params }: PageProps) {
                   <div className="row g-3 mb-4">
                     <div className="col-6 col-md-3">
                       <div className="text-center p-3 bg-primary bg-opacity-10 rounded">
-                        <div className="fw-bold text-primary fs-4">
-                          {profile.years_of_experience ?? 0}+
+                        <div className="fw-bold fs-4" style={{ color: '#0d6efd !important' }}>
+                          {profile.years_of_experience !== null && profile.years_of_experience !== undefined 
+                            ? `${profile.years_of_experience}+` 
+                            : 'N/A'}
                         </div>
-                        <small className="text-muted">Years Experience</small>
+                        <small style={{ color: '#6c757d' }}>Years Experience</small>
                       </div>
                     </div>
                     <div className="col-6 col-md-3">
                       <div className="text-center p-3 bg-success bg-opacity-10 rounded">
-                        <div className="fw-bold text-success fs-4">
-                          {profile.total_jobs_completed}
+                        <div className="fw-bold fs-4" style={{ color: '#198754 !important' }}>
+                          {profile.total_jobs_completed || 0}
                         </div>
-                        <small className="text-muted">Jobs Completed</small>
+                        <small style={{ color: '#6c757d' }}>Jobs Completed</small>
                       </div>
                     </div>
                     <div className="col-6 col-md-3">
                       <div className="text-center p-3 bg-warning bg-opacity-10 rounded">
-                        <div className="fw-bold text-warning fs-4">
-                          {profile.rating}
+                        <div className="fw-bold fs-4" style={{ color: '#d97706 !important' }}>
+                          {profile.rating || '0.0'}
                         </div>
-                        <small className="text-muted">Rating</small>
+                        <small style={{ color: '#6c757d' }}>Rating</small>
                       </div>
                     </div>
                     <div className="col-6 col-md-3">
                       <div className="text-center p-3 bg-info bg-opacity-10 rounded">
-                        <div className="fw-bold text-info fs-4">
+                        <div className="fw-bold fs-4" style={{ color: '#0891b2 !important' }}>
                           {profile.is_available ? "Yes" : "No"}
                         </div>
-                        <small className="text-muted">Available Now</small>
+                        <small style={{ color: '#6c757d' }}>Available Now</small>
                       </div>
                     </div>
                   </div>
 
-                  {/* Contact Information */}
-                  <div className="mb-4">
-                    <h5 className="fw-bold text-dark mb-3">
-                      <i className="bi bi-telephone me-2 text-primary"></i>
-                      Contact Information
-                    </h5>
-                    <div className="row g-3">
-                      <div className="col-12 col-md-6">
-                        <div className="d-flex align-items-center p-3 bg-light rounded">
-                          <i className="bi bi-phone text-primary me-3 fs-5"></i>
-                          <div>
-                            <small className="text-muted">Phone</small>
-                            <div className="fw-medium text-dark">
-                              {profile.phone_number || "Not provided"}
-                            </div>
-                          </div>
-                        </div>
+                  {/* Skills Section */}
+                  {profile.skills && Array.isArray(profile.skills) && profile.skills.length > 0 && (
+                    <div className="mb-4">
+                      <h5 className="fw-bold text-dark mb-3">
+                        <i className="bi bi-tools me-2 text-primary"></i>
+                        Skills & Expertise
+                      </h5>
+                      <div className="d-flex flex-wrap gap-2">
+                        {profile.skills.map((skill: any, index: number) => {
+                          // Handle both string and object skills
+                          const skillName = typeof skill === 'string' ? skill : (skill.name || skill);
+                          
+                          return (
+                            <span
+                              key={skill.id || index}
+                              className="badge px-3 py-2"
+                              style={{ 
+                                fontSize: '0.95rem',
+                                backgroundColor: '#e7f3ff',
+                                color: '#0066cc',
+                                border: '1px solid #0066cc'
+                              }}
+                            >
+                              <i className="bi bi-check-circle-fill me-1"></i>
+                              {skillName}
+                            </span>
+                          );
+                        })}
                       </div>
-                      <div className="col-12 col-md-6">
-                        <div className="d-flex align-items-center p-3 bg-light rounded">
-                          <i className="bi bi-envelope text-primary me-3 fs-5"></i>
-                          <div>
-                            <small className="text-muted">
-                              Contact via Platform
-                            </small>
-                            <div className="fw-medium text-dark">
-                              Message to book
-                            </div>
-                          </div>
+                    </div>
+                  )}
+
+                  {/* Contact Information - Removed for privacy */}
+                  {/* Phone numbers are now only visible after booking */}
+
+                  {/* Availability Status */}
+                  {profile.active_jobs_count !== undefined && profile.active_jobs_count > 0 && (
+                    <div className="alert alert-warning border-0 mb-0">
+                      <div className="d-flex align-items-start">
+                        <i className="bi bi-exclamation-triangle fs-5 me-3"></i>
+                        <div>
+                          <h6 className="alert-heading mb-1">Currently Busy</h6>
+                          <p className="mb-0 small">
+                            {getDisplayName()} is currently working on {profile.active_jobs_count} active job{profile.active_jobs_count !== 1 ? 's' : ''}. 
+                            Response time may be longer than usual.
+                          </p>
                         </div>
                       </div>
                     </div>
-                  </div>
+                  )}
+
                 </div>
               </div>
             </div>
@@ -465,7 +547,7 @@ export default function ServicemanPublicProfilePage({ params }: PageProps) {
                         Available for immediate booking
                       </div>
 
-                      <div className="d-grid gap-2">
+                      <div className="d-grid">
                         <button
                           className="btn btn-primary btn-lg"
                           onClick={handleBookService}
@@ -493,10 +575,6 @@ export default function ServicemanPublicProfilePage({ params }: PageProps) {
                             : !profile.category
                             ? "Category Not Set"
                             : "Book Service Now"}
-                        </button>
-                        <button className="btn btn-outline-primary">
-                          <i className="bi bi-chat me-2"></i>
-                          Send Message
                         </button>
                       </div>
 
@@ -541,25 +619,30 @@ export default function ServicemanPublicProfilePage({ params }: PageProps) {
               </div>
             </div>
           </div>
+          </>
         )}
       </div>
 
-      {/* Booking Modal */}
+      {/* Booking Modal - Professional UI */}
       {showBookingModal && (
         <div
           className="modal fade show d-block"
           style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
           tabIndex={-1}
         >
-          <div className="modal-dialog modal-dialog-centered">
-            <div className="modal-content">
-              <div className="modal-header">
-                <h5 className="modal-title fw-bold">
-                  Book Service with {getDisplayName()}
-                </h5>
+          <div className="modal-dialog modal-dialog-centered modal-lg">
+            <div className="modal-content shadow-lg border-0">
+              <div className="modal-header bg-primary text-white border-0">
+                <div>
+                  <h5 className="modal-title fw-bold mb-1">
+                    <i className="bi bi-calendar-check me-2"></i>
+                    Book Service
+                  </h5>
+                  <small className="opacity-75">Complete the form to request service</small>
+                </div>
                 <button
                   type="button"
-                  className="btn-close"
+                  className="btn-close btn-close-white"
                   onClick={() => setShowBookingModal(false)}
                   disabled={bookingLoading}
                 ></button>
@@ -567,136 +650,237 @@ export default function ServicemanPublicProfilePage({ params }: PageProps) {
 
               {bookingSuccess ? (
                 <div className="modal-body text-center py-5">
-                  <i className="bi bi-check-circle-fill text-success display-4 mb-3"></i>
-                  <h5 className="text-success mb-2">Booking Request Sent!</h5>
-                  <p className="text-muted">
-                    Your service request has been submitted successfully.
-                    {getDisplayName()} will review your request shortly.
+                  <div className="mb-4">
+                    <div className="bg-success bg-opacity-10 rounded-circle d-inline-flex p-4 mb-3">
+                      <i className="bi bi-check-circle-fill text-success display-3"></i>
+                    </div>
+                  </div>
+                  <h4 className="text-success fw-bold mb-3">Booking Request Sent!</h4>
+                  <p className="text-muted mb-4">
+                    Your service request has been submitted successfully.<br/>
+                    <strong>{getDisplayName()}</strong> will review your request shortly.
                   </p>
+                  <button 
+                    className="btn btn-primary"
+                    onClick={() => setShowBookingModal(false)}
+                  >
+                    <i className="bi bi-check-lg me-2"></i>
+                    Done
+                  </button>
                 </div>
               ) : (
                 <form onSubmit={handleSubmitBooking}>
-                  <div className="modal-body">
-                    <div className="row g-3">
-                      <div className="col-12">
-                        <label className="form-label fw-medium">
-                          Service Date & Time{" "}
-                          <span className="text-danger">*</span>
-                        </label>
-                        <input
-                          type="datetime-local"
-                          className="form-control"
-                          value={bookingDetails.booking_date}
-                          onChange={(e) =>
-                            setBookingDetails({
-                              ...bookingDetails,
-                              booking_date: e.target.value,
-                            })
-                          }
-                          required
-                          min={new Date().toISOString().slice(0, 16)}
-                        />
-                        <small className="form-text text-muted">
-                          <i className="bi bi-info-circle me-1"></i>
-                          Bookings within 2 days are marked as emergency (₦5,000 fee instead of ₦2,000)
-                        </small>
+                  <div className="modal-body" style={{ maxHeight: '70vh', overflowY: 'auto' }}>
+                    
+                    {/* Serviceman Info Summary */}
+                    <div className="card bg-light border-0 mb-4">
+                      <div className="card-body py-3">
+                        <div className="d-flex align-items-center">
+                          <div className="bg-primary bg-opacity-10 rounded-circle p-2 me-3">
+                            <i className="bi bi-person-badge text-primary fs-4"></i>
+                          </div>
+                          <div>
+                            <div className="fw-bold text-dark">{getDisplayName()}</div>
+                            <small className="text-muted">
+                              {(profile?.category && typeof profile.category === 'object' && profile.category.name) || 'Service Professional'} • 
+                              <span className="ms-1">
+                                <i className="bi bi-star-fill text-warning"></i> {profile?.rating || 'N/A'}
+                              </span>
+                            </small>
+                          </div>
+                        </div>
                       </div>
+                    </div>
 
+                    <div className="row g-4">
+                      {/* Date Only */}
                       <div className="col-12">
-                        <label className="form-label fw-medium">
-                          Service Address <span className="text-danger">*</span>
-                        </label>
-                        <input
-                          type="text"
-                          className="form-control"
-                          placeholder="Enter your complete address (e.g., 123 Main St, Lagos, Nigeria)"
-                          value={bookingDetails.client_address}
-                          onChange={(e) =>
-                            setBookingDetails({
-                              ...bookingDetails,
-                              client_address: e.target.value,
-                            })
-                          }
-                          required
-                          minLength={10}
-                        />
-                        <small className="form-text text-muted">
-                          Provide your full address where the service is needed
-                        </small>
-                      </div>
-
-                      <div className="col-12">
-                        <label className="form-label fw-medium">
-                          Service Description{" "}
-                          <span className="text-danger">*</span>
-                        </label>
-                        <textarea
-                          className="form-control"
-                          rows={3}
-                          placeholder="Describe the service you need in detail..."
-                          value={bookingDetails.service_description}
-                          onChange={(e) =>
-                            setBookingDetails({
-                              ...bookingDetails,
-                              service_description: e.target.value,
-                            })
-                          }
-                          required
-                          minLength={20}
-                        />
-                        <small className="form-text text-muted">
-                          Be specific about what needs to be done (minimum 20 characters)
-                        </small>
-                      </div>
-
-                      <div className="col-12">
-                        <div className="form-check">
+                        <div className="form-group">
+                          <label className="form-label fw-semibold d-flex align-items-center mb-2">
+                            <i className="bi bi-calendar-event text-primary me-2"></i>
+                            Service Date
+                            <span className="text-danger ms-1">*</span>
+                          </label>
                           <input
-                            className="form-check-input"
-                            type="checkbox"
-                            id="emergency"
-                            checked={bookingDetails.is_emergency}
+                            type="date"
+                            className="form-control form-control-lg"
+                            value={bookingDetails.booking_date}
                             onChange={(e) =>
                               setBookingDetails({
                                 ...bookingDetails,
-                                is_emergency: e.target.checked,
+                                booking_date: e.target.value,
                               })
                             }
+                            required
+                            min={new Date().toISOString().split('T')[0]}
                           />
-                          <label
-                            className="form-check-label fw-medium"
-                            htmlFor="emergency"
-                          >
-                            This is an emergency service
+                          <div className="form-text mt-2">
+                            <i className="bi bi-info-circle text-primary me-1"></i>
+                            <span className="small">Select the date when you need the service. Bookings within 2 days are marked as emergency.</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Service Address */}
+                      <div className="col-12">
+                        <div className="form-group">
+                          <label className="form-label fw-semibold d-flex align-items-center mb-2">
+                            <i className="bi bi-geo-alt text-danger me-2"></i>
+                            Service Address
+                            <span className="text-danger ms-1">*</span>
                           </label>
-                          <div className="form-text">
-                            <i className="bi bi-info-circle me-1"></i>
-                            {bookingDetails.is_emergency ? (
-                              <span className="text-warning">
-                                <strong>Initial booking fee: ₦5,000</strong> (Emergency service)
-                              </span>
-                            ) : (
-                              <span className="text-success">
-                                <strong>Initial booking fee: ₦2,000</strong> (Standard service)
-                              </span>
-                            )}
+                          <div className="input-group input-group-lg">
+                            <span className="input-group-text bg-light border-end-0">
+                              <i className="bi bi-house-door"></i>
+                            </span>
+                            <input
+                              type="text"
+                              className="form-control border-start-0 ps-0"
+                              placeholder="e.g., 123 Main Street, Victoria Island, Lagos"
+                              value={bookingDetails.client_address}
+                              onChange={(e) =>
+                                setBookingDetails({
+                                  ...bookingDetails,
+                                  client_address: e.target.value,
+                                })
+                              }
+                              required
+                              minLength={10}
+                            />
+                          </div>
+                          <div className="form-text mt-2">
+                            <i className="bi bi-info-circle text-primary me-1"></i>
+                            <span className="small">Provide your complete address where the service is needed</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Service Description */}
+                      <div className="col-12">
+                        <div className="form-group">
+                          <label className="form-label fw-semibold d-flex align-items-center justify-content-between mb-2">
+                            <span>
+                              <i className="bi bi-pencil-square text-success me-2"></i>
+                              Service Description
+                              <span className="text-danger ms-1">*</span>
+                            </span>
+                            <small className="text-muted fw-normal">
+                              {bookingDetails.service_description.length}/500
+                            </small>
+                          </label>
+                          <textarea
+                            className="form-control form-control-lg"
+                            rows={4}
+                            placeholder="Describe the service you need in detail...&#10;&#10;Example: I need help installing a new ceiling fan in my living room. The fan is already purchased and ready. I need the old fan removed and the new one installed, including proper wiring and testing."
+                            value={bookingDetails.service_description}
+                            onChange={(e) =>
+                              setBookingDetails({
+                                ...bookingDetails,
+                                service_description: e.target.value.slice(0, 500),
+                              })
+                            }
+                            required
+                            minLength={20}
+                            maxLength={500}
+                            style={{ resize: 'vertical' }}
+                          />
+                          <div className="form-text mt-2">
+                            <i className="bi bi-info-circle text-primary me-1"></i>
+                            <span className="small">
+                              Be specific about what needs to be done (minimum 20 characters). This helps the serviceman prepare better.
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Emergency Service Toggle */}
+                      <div className="col-12">
+                        <div className={`card border-2 ${bookingDetails.is_emergency ? 'border-warning bg-warning bg-opacity-10' : 'border-success bg-success bg-opacity-10'}`}>
+                          <div className="card-body">
+                            <div className="form-check form-switch">
+                              <input
+                                className="form-check-input"
+                                type="checkbox"
+                                role="switch"
+                                id="emergency"
+                                style={{ width: '3em', height: '1.5em', cursor: 'pointer' }}
+                                checked={bookingDetails.is_emergency}
+                                onChange={(e) =>
+                                  setBookingDetails({
+                                    ...bookingDetails,
+                                    is_emergency: e.target.checked,
+                                  })
+                                }
+                              />
+                              <label
+                                className="form-check-label fw-semibold"
+                                htmlFor="emergency"
+                                style={{ cursor: 'pointer', marginLeft: '0.5em' }}
+                              >
+                                <i className={`bi ${bookingDetails.is_emergency ? 'bi-lightning-charge-fill text-warning' : 'bi-clock-history text-success'} me-2`}></i>
+                                {bookingDetails.is_emergency ? 'Emergency Service' : 'Standard Service'}
+                              </label>
+                            </div>
+                            <div className="mt-2 ps-5">
+                              {bookingDetails.is_emergency ? (
+                                <div>
+                                  <div className="fw-bold text-warning mb-1">
+                                    <i className="bi bi-exclamation-triangle-fill me-1"></i>
+                                    Initial Booking Fee: ₦5,000
+                                  </div>
+                                  <small className="text-dark">
+                                    Priority service with faster response time. The serviceman will prioritize your request.
+                                  </small>
+                                </div>
+                              ) : (
+                                <div>
+                                  <div className="fw-bold text-success mb-1">
+                                    <i className="bi bi-check-circle-fill me-1"></i>
+                                    Initial Booking Fee: ₦2,000
+                                  </div>
+                                  <small className="text-dark">
+                                    Standard service booking. The serviceman will respond within normal timeframes.
+                                  </small>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Important Notice */}
+                      <div className="col-12">
+                        <div className="alert alert-info border-0 mb-0">
+                          <div className="d-flex">
+                            <i className="bi bi-info-circle-fill me-3 fs-5"></i>
+                            <div className="small">
+                              <strong>What happens next?</strong>
+                              <ul className="mb-0 mt-2 ps-3">
+                                <li>Your request will be sent to {getDisplayName()}</li>
+                                <li>You'll receive a notification when reviewed</li>
+                                <li>Payment of the booking fee will be required to confirm</li>
+                                <li>Final service cost will be provided after assessment</li>
+                              </ul>
+                            </div>
                           </div>
                         </div>
                       </div>
                     </div>
                   </div>
-                  <div className="modal-footer">
+
+                  <div className="modal-footer border-top bg-light">
                     <button
                       type="button"
-                      className="btn btn-outline-secondary"
+                      className="btn btn-lg btn-outline-secondary"
                       onClick={() => setShowBookingModal(false)}
                       disabled={bookingLoading}
                     >
+                      <i className="bi bi-x-lg me-2"></i>
                       Cancel
                     </button>
                     <button
                       type="submit"
-                      className="btn btn-primary"
+                      className="btn btn-lg btn-primary px-4"
                       disabled={bookingLoading}
                     >
                       {bookingLoading ? (
@@ -709,8 +893,8 @@ export default function ServicemanPublicProfilePage({ params }: PageProps) {
                         </>
                       ) : (
                         <>
-                          <i className="bi bi-send me-2"></i>
-                          Send Request
+                          <i className="bi bi-send-fill me-2"></i>
+                          Send Booking Request
                         </>
                       )}
                     </button>

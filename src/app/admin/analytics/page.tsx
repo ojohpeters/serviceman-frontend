@@ -1,4 +1,5 @@
 'use client';
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAdmin } from '../../hooks/useAdmin';
 import { useAnalytics } from '../../hooks/useAPI';
@@ -10,11 +11,12 @@ export default function AdminAnalyticsPage() {
   const router = useRouter();
   const { revenue, topServicemen, topCategories, loading, refetch } = useAnalytics(isAdmin);
 
-  // Redirect if not admin
-  if (!adminLoading && !isAdmin) {
-    router.push('/admin/login');
-    return null;
-  }
+  // Redirect if not admin (use useEffect to avoid setState during render)
+  useEffect(() => {
+    if (!adminLoading && !isAdmin) {
+      router.push('/admin/login');
+    }
+  }, [adminLoading, isAdmin, router]);
 
   if (adminLoading) {
     return (

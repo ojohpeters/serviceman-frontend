@@ -236,8 +236,10 @@ export default function CategoryServicemenPage({ params }: PageProps) {
                     <div className="rounded-circle bg-success bg-opacity-10 p-2 me-3">
                       <i className="bi bi-trophy text-success"></i>
                     </div>
-                    <div>
-                      <div className="fw-bold text-dark fs-6">{stats.topRated.full_name.split(' ')[0]}</div>
+                    <div style={{ minWidth: 0 }}>
+                      <div className="fw-bold text-dark fs-6 text-truncate" style={{ maxWidth: '150px' }}>
+                        {stats.topRated.full_name}
+                      </div>
                       <small className="text-muted">Top Rated ({stats.topRated.rating.toFixed(1)})</small>
                     </div>
                   </div>

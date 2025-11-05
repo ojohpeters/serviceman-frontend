@@ -1,13 +1,14 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { serviceRequestsService, ServiceRequest } from '../../services/serviceRequests';
-import { notificationsService, Notification } from '../../services/notifications';
+import serviceRequestsService from '../../services/serviceRequests';
+import { ServiceRequest } from '../../types/api';
+import notificationsService from '../../services/notifications';
 import { adminService } from '../../services/admin';
 import { useAuth } from '../../contexts/AuthContext';
 import { useUser } from '../../contexts/UserContext';
-import { useNotifications } from '../../hooks/useAPI';
+import { useNotifications } from '../../contexts/NotificationContext';
 import { getStatusConfig, getProgressPercent, requiresPayment, requiresReview, canCancelRequest } from '../../utils/statusHelpers';
 import Nav from '../../components/common/Nav';
 import SecondFooter from '../../components/common/SecondFooter';
@@ -25,15 +26,27 @@ export default function ServiceRequestDetailPage() {
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [showEstimateModal, setShowEstimateModal] = useState(false);
   const [showCompleteModal, setShowCompleteModal] = useState(false);
+  const [showFinalizePriceModal, setShowFinalizePriceModal] = useState(false);
+  const [showConfirmCompletionModal, setShowConfirmCompletionModal] = useState(false);
+  const [showReviewModal, setShowReviewModal] = useState(false);
   const [availableServicemen, setAvailableServicemen] = useState<any[]>([]);
   const [estimateAmount, setEstimateAmount] = useState('');
+  const [estimateNotes, setEstimateNotes] = useState('');
   const [finalAmount, setFinalAmount] = useState('');
+  const [completionNotes, setCompletionNotes] = useState('');
+  const [markupPercentage, setMarkupPercentage] = useState('10');
+  const [adminNotes, setAdminNotes] = useState('');
+  const [messageToClient, setMessageToClient] = useState('');
+  const [rating, setRating] = useState(5);
+  const [reviewText, setReviewText] = useState('');
   const [selectedServiceman, setSelectedServiceman] = useState<number | null>(null);
+  const [selectedBackupServiceman, setSelectedBackupServiceman] = useState<number | null>(null);
+  const [assignmentNotes, setAssignmentNotes] = useState('');
 
   const requestId = params.id as string;
   
-  // Fetch notifications for this service request
-  const { notifications, markAsRead } = useNotifications(30000, { limit: 10 });
+  // Fetch notifications for this service request - now uses global context
+  const { notifications, markAsRead } = useNotifications();
 
   useEffect(() => {
     const fetchServiceRequest = async () => {
@@ -41,10 +54,29 @@ export default function ServiceRequestDetailPage() {
         setLoading(true);
         setError(null);
         const request = await serviceRequestsService.getServiceRequestById(Number(requestId));
+        
+        // 🔍 DEBUG: Log the full API response
+        console.log('🔍 [Service Request API Response]', {
+          id: request.id,
+          status: request.status,
+          serviceman: request.serviceman,
+          client: request.client,
+          category: request.category,
+          service_description: request.service_description,
+          booking_date: request.booking_date,
+          created_at: request.created_at,
+          updated_at: request.updated_at,
+          initial_booking_fee: request.initial_booking_fee,
+          cost_estimate: request.cost_estimate,
+          final_cost: request.final_cost,
+          fullResponse: request
+        });
+        
         setServiceRequest(request);
         
-        // If admin and request needs assignment, fetch available servicemen
-        if (user?.user_type === 'ADMIN' && request.status !== 'PENDING_PAYMENT' && !request.serviceman) {
+        // If admin and request is in assignment phase, fetch available servicemen
+        // Allow fetching even if serviceman is already assigned (for reassignment)
+        if (user?.user_type === 'ADMIN' && request.status === 'PENDING_ADMIN_ASSIGNMENT') {
           const servicemen = await serviceRequestsService.getAvailableServicemenForAssignment(request.category.id);
           setAvailableServicemen(servicemen);
         }
@@ -80,25 +112,35 @@ export default function ServiceRequestDetailPage() {
   const handleAssignServiceman = async () => {
     if (!selectedServiceman || !serviceRequest) return;
     
+    // Validate primary and backup are not the same
+    if (selectedBackupServiceman && selectedServiceman === selectedBackupServiceman) {
+      alert('Primary and backup servicemen cannot be the same person');
+      return;
+    }
+    
     try {
       setActionLoading(true);
-      console.log('🔧 Assigning serviceman:', {
+      console.log('🔧 Assigning servicemen:', {
         requestId: serviceRequest.id,
-        servicemanId: selectedServiceman,
+        primaryServicemanId: selectedServiceman,
+        backupServicemanId: selectedBackupServiceman,
+        notes: assignmentNotes,
         currentStatus: serviceRequest.status
       });
       
-      // Use the new working backend endpoint
+      // Use the new working backend endpoint with backup and notes
       const updatedRequest = await serviceRequestsService.assignServiceman(
         serviceRequest.id, 
         selectedServiceman,
-        undefined, // backup serviceman (optional)
-        `Assigned by ${user?.username || 'admin'}`
+        selectedBackupServiceman || undefined, // backup serviceman (optional)
+        assignmentNotes || `Assigned by ${user?.username || 'admin'}`
       );
       
       // Update the service request state
       setServiceRequest(updatedRequest);
       setShowAssignModal(false);
+      setSelectedBackupServiceman(null);
+      setAssignmentNotes('');
       
       // Send notification to serviceman
       try {
@@ -122,45 +164,41 @@ export default function ServiceRequestDetailPage() {
     }
   };
 
-  const handleProvideEstimate = async () => {
+  // STEP 3: Submit Estimate (Serviceman)
+  const handleSubmitEstimate = async () => {
     if (!estimateAmount || !serviceRequest) return;
+    
+    const amount = parseFloat(estimateAmount);
+    if (isNaN(amount) || amount <= 0) {
+      alert('Please enter a valid cost estimate');
+      return;
+    }
     
     try {
       setActionLoading(true);
-      console.log('💰 Providing cost estimate:', {
+      console.log('💰 Submitting cost estimate:', {
         requestId: serviceRequest.id,
-        estimateAmount: estimateAmount,
+        estimateAmount: amount,
+        notes: estimateNotes,
         currentStatus: serviceRequest.status
       });
       
-      // Use PATCH to update the service request
-      const updatedRequest = await serviceRequestsService.updateServiceRequest(serviceRequest.id, {
-        serviceman_estimated_cost: estimateAmount,
-        status: 'AWAITING_CLIENT_APPROVAL'
-      });
+      const result = await serviceRequestsService.submitEstimate(
+        serviceRequest.id,
+        amount,
+        estimateNotes
+      );
       
-      // Update the service request state
-      setServiceRequest(updatedRequest);
+      setServiceRequest(result.service_request);
       setShowEstimateModal(false);
       setEstimateAmount('');
+      setEstimateNotes('');
       
-      // Send notification to client
-      try {
-        await notificationsService.sendNotification({
-          user_id: serviceRequest.client.id,
-          title: 'Cost Estimate Received',
-          message: `Your serviceman has provided a cost estimate of ₦${parseFloat(estimateAmount).toLocaleString()} for service request #${serviceRequest.id}. Please review and approve.`
-        });
-        console.log('✅ Notification sent successfully');
-      } catch (notifError) {
-        console.warn('Failed to send notification:', notifError);
-      }
-      
-      alert('Cost estimate submitted successfully!');
+      alert(result.message || 'Cost estimate submitted successfully!');
       
     } catch (error: any) {
-      console.error('❌ Estimate error:', error);
-      alert('Failed to submit estimate: ' + (error.response?.data?.detail || error.message));
+      console.error('❌ Submit estimate error:', error);
+      alert('Failed to submit estimate: ' + (error.response?.data?.detail || error.response?.data?.error || error.message));
     } finally {
       setActionLoading(false);
     }
@@ -206,51 +244,166 @@ export default function ServiceRequestDetailPage() {
     }
   };
 
-  const handleMarkCompleted = async () => {
+  // STEP 4: Finalize Price (Admin)
+  const handleFinalizePrice = async () => {
+    if (!serviceRequest) return;
+    
+    const markup = parseFloat(markupPercentage);
+    if (isNaN(markup) || markup < 0 || markup > 100) {
+      alert('Please enter a valid markup percentage (0-100)');
+      return;
+    }
+    
+    try {
+      setActionLoading(true);
+      console.log('💵 Finalizing price:', {
+        requestId: serviceRequest.id,
+        markupPercentage: markup,
+        adminNotes,
+        currentStatus: serviceRequest.status
+      });
+      
+      const result = await serviceRequestsService.finalizePrice(
+        serviceRequest.id,
+        markup,
+        adminNotes
+      );
+      
+      setServiceRequest(result.service_request);
+      setShowFinalizePriceModal(false);
+      setMarkupPercentage('10');
+      setAdminNotes('');
+      
+      alert(`${result.message}\n\nPricing Breakdown:\nBase Cost: ₦${result.pricing_breakdown.base_cost.toLocaleString()}\nPlatform Fee (${result.pricing_breakdown.markup_percentage}%): ₦${result.pricing_breakdown.platform_fee.toLocaleString()}\nFinal Cost: ₦${result.pricing_breakdown.final_cost.toLocaleString()}`);
+      
+    } catch (error: any) {
+      console.error('❌ Finalize price error:', error);
+      alert('Failed to finalize price: ' + (error.response?.data?.detail || error.response?.data?.error || error.message));
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  // STEP 6: Authorize Work (Admin)
+  const handleAuthorizeWork = async () => {
     if (!serviceRequest) return;
     
     try {
       setActionLoading(true);
-      console.log('✅ Marking service as completed:', {
+      console.log('✅ Authorizing work:', {
         requestId: serviceRequest.id,
-        finalAmount: finalAmount,
         currentStatus: serviceRequest.status
       });
       
-      // Prepare update data
-      const updateData: any = {
-        status: 'COMPLETED'
-      };
+      const result = await serviceRequestsService.authorizeWork(serviceRequest.id);
       
-      if (finalAmount) {
-        updateData.final_cost = finalAmount;
-      }
-      
-      // Use PATCH to update the service request
-      const updatedRequest = await serviceRequestsService.updateServiceRequest(serviceRequest.id, updateData);
-      
-      // Update the service request state
-      setServiceRequest(updatedRequest);
-      setShowCompleteModal(false);
-      setFinalAmount('');
-      
-      // Send notification to client
-      try {
-        await notificationsService.sendNotification({
-          user_id: serviceRequest.client.id,
-          title: 'Service Completed',
-          message: `Your service request #${serviceRequest.id} has been completed${finalAmount ? ` with final cost of ₦${parseFloat(finalAmount).toLocaleString()}` : ''}. Please rate the service.`
-        });
-        console.log('✅ Notification sent successfully');
-      } catch (notifError) {
-        console.warn('Failed to send notification:', notifError);
-      }
-      
-      alert('Service marked as completed!');
+      setServiceRequest(result.service_request);
+      alert(result.message || 'Work authorized successfully!');
       
     } catch (error: any) {
-      console.error('❌ Mark completed error:', error);
-      alert('Failed to mark as completed: ' + (error.response?.data?.detail || error.message));
+      console.error('❌ Authorize work error:', error);
+      alert('Failed to authorize work: ' + (error.response?.data?.detail || error.response?.data?.error || error.message));
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  // STEP 7: Complete Job (Serviceman)
+  const handleCompleteJob = async () => {
+    if (!serviceRequest) return;
+    
+    try {
+      setActionLoading(true);
+      console.log('✅ Completing job:', {
+        requestId: serviceRequest.id,
+        completionNotes,
+        currentStatus: serviceRequest.status
+      });
+      
+      const result = await serviceRequestsService.completeJob(
+        serviceRequest.id,
+        completionNotes
+      );
+      
+      setServiceRequest(result.service_request);
+      setShowCompleteModal(false);
+      setCompletionNotes('');
+      
+      alert(result.message || 'Job marked as complete!');
+      
+    } catch (error: any) {
+      console.error('❌ Complete job error:', error);
+      alert('Failed to complete job: ' + (error.response?.data?.detail || error.response?.data?.error || error.message));
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  // STEP 8: Confirm Completion (Admin)
+  const handleConfirmCompletion = async () => {
+    if (!serviceRequest) return;
+    
+    try {
+      setActionLoading(true);
+      console.log('✅ Confirming completion:', {
+        requestId: serviceRequest.id,
+        messageToClient,
+        currentStatus: serviceRequest.status
+      });
+      
+      const result = await serviceRequestsService.confirmCompletion(
+        serviceRequest.id,
+        messageToClient
+      );
+      
+      setServiceRequest(result.service_request);
+      setShowConfirmCompletionModal(false);
+      setMessageToClient('');
+      
+      alert(result.message || 'Completion confirmed to client!');
+      
+    } catch (error: any) {
+      console.error('❌ Confirm completion error:', error);
+      alert('Failed to confirm completion: ' + (error.response?.data?.detail || error.response?.data?.error || error.message));
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  // STEP 9: Submit Review (Client)
+  const handleSubmitReview = async () => {
+    if (!serviceRequest) return;
+    
+    if (rating < 1 || rating > 5) {
+      alert('Please select a rating between 1 and 5 stars');
+      return;
+    }
+    
+    try {
+      setActionLoading(true);
+      console.log('⭐ Submitting review:', {
+        requestId: serviceRequest.id,
+        rating,
+        reviewText,
+        currentStatus: serviceRequest.status
+      });
+      
+      const result = await serviceRequestsService.submitReview(
+        serviceRequest.id,
+        rating,
+        reviewText
+      );
+      
+      setServiceRequest(result.service_request);
+      setShowReviewModal(false);
+      setRating(5);
+      setReviewText('');
+      
+      alert(result.message || 'Thank you for your review!');
+      
+    } catch (error: any) {
+      console.error('❌ Submit review error:', error);
+      alert('Failed to submit review: ' + (error.response?.data?.detail || error.response?.data?.error || error.message));
     } finally {
       setActionLoading(false);
     }
@@ -280,6 +433,39 @@ export default function ServiceRequestDetailPage() {
       isFinal: config.isFinal || false,
     };
   };
+
+  // Smart status display: Handle backend inconsistency where serviceman is assigned but status not updated
+  const displayStatus = useMemo(() => {
+    if (!serviceRequest) return 'PENDING_ADMIN_ASSIGNMENT';
+    
+    const rawStatus = serviceRequest.status;
+    
+    // 🔍 DEBUG: Log status logic
+    console.log('🔍 [Status Display Logic]', {
+      rawStatus: rawStatus,
+      hasServiceman: !!serviceRequest.serviceman,
+      servicemanData: serviceRequest.serviceman,
+      willOverride: serviceRequest.serviceman && (rawStatus === 'PENDING_ADMIN_ASSIGNMENT' || rawStatus === 'AWAITING_ASSIGNMENT')
+    });
+    
+    // If serviceman is assigned but status still shows pending assignment, 
+    // the backend hasn't updated yet - show correct status
+    if (serviceRequest.serviceman) {
+      if (rawStatus === 'PENDING_ADMIN_ASSIGNMENT' || rawStatus === 'AWAITING_ASSIGNMENT') {
+        // Serviceman assigned but waiting for estimate
+        console.log('✅ [Status Override] Changing status from', rawStatus, 'to PENDING_ESTIMATION');
+        return 'PENDING_ESTIMATION';
+      }
+    }
+    
+    // Otherwise use backend status as is
+    console.log('✅ [Status No Override] Using backend status:', rawStatus);
+    return rawStatus;
+  }, [serviceRequest]);
+
+  const statusInfo = useMemo(() => {
+    return getStatusInfo(displayStatus);
+  }, [displayStatus]);
 
   if (loading) {
     return (
@@ -324,8 +510,6 @@ export default function ServiceRequestDetailPage() {
       </div>
     );
   }
-
-  const statusInfo = getStatusInfo(serviceRequest.status);
 
   return (
     <ProtectedRoute>
@@ -420,12 +604,12 @@ export default function ServiceRequestDetailPage() {
                     <div className="col-md-6">
                       <div className="mb-3">
                         <strong>Service Description:</strong>
-                        <p className="mb-0 mt-1">{serviceRequest.description}</p>
+                        <p className="mb-0 mt-1">{serviceRequest.service_description || 'No description provided'}</p>
                       </div>
                       
                       <div className="mb-3">
                         <strong>Service Address:</strong>
-                        <p className="mb-0 mt-1">{serviceRequest.address}</p>
+                        <p className="mb-0 mt-1">{serviceRequest.client_address || 'No address provided'}</p>
                       </div>
                       
                       <div className="mb-3">
@@ -467,18 +651,16 @@ export default function ServiceRequestDetailPage() {
                         </p>
                       </div>
                       
-                      <div className="mb-3">
-                        <strong>Booking Fee:</strong>
-                        <p className="mb-0 mt-1">
-                          {serviceRequest.initial_fee ? (
+                      {serviceRequest.initial_booking_fee && (
+                        <div className="mb-3">
+                          <strong>Booking Fee:</strong>
+                          <p className="mb-0 mt-1">
                             <span className="fw-bold text-success">
-                              {formatCurrency(serviceRequest.initial_fee)}
+                              {formatCurrency(serviceRequest.initial_booking_fee)}
                             </span>
-                          ) : (
-                            <span className="text-muted">Not set</span>
-                          )}
-                        </p>
-                      </div>
+                          </p>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -611,48 +793,88 @@ export default function ServiceRequestDetailPage() {
                   {/* Client Actions */}
                   {user?.user_type === 'CLIENT' && (
                     <div className="d-grid gap-2">
-                      {serviceRequest.status === 'PENDING_PAYMENT' && (
-                        <button className="btn btn-primary btn-lg">
-                          <i className="bi bi-credit-card me-2"></i>
-                          Pay Booking Fee
-                        </button>
+                      {/* STEP 5: Client Payment */}
+                      {serviceRequest.status === 'AWAITING_CLIENT_APPROVAL' && (
+                        <div>
+                          <div className="alert alert-warning mb-3">
+                            <strong>Final Price:</strong> ₦{serviceRequest.final_cost ? parseFloat(serviceRequest.final_cost).toLocaleString() : '0'}
+                            <div className="small mt-1">Please review and approve to proceed</div>
+                          </div>
+                          <button className="btn btn-primary btn-lg w-100">
+                            <i className="bi bi-credit-card me-2"></i>
+                            Pay Now
+                          </button>
+                        </div>
                       )}
-                      {serviceRequest.status === 'COMPLETED' && (
-                        <button className="btn btn-success btn-lg">
+                      
+                      {/* STEP 9: Submit Review */}
+                      {serviceRequest.status === 'COMPLETED' && serviceRequest.status !== 'CLIENT_REVIEWED' && (
+                        <button 
+                          className="btn btn-warning btn-lg"
+                          onClick={() => setShowReviewModal(true)}
+                          disabled={actionLoading}
+                        >
                           <i className="bi bi-star me-2"></i>
-                          Rate Service
+                          {actionLoading ? 'Processing...' : 'Rate Serviceman'}
                         </button>
                       )}
-                      <button className="btn btn-outline-secondary" disabled>
-                        <i className="bi bi-telephone me-2"></i>
-                        Contact Support
-                      </button>
+                      
+                      {/* Status Info */}
+                      {serviceRequest.status === 'PENDING_ADMIN_ASSIGNMENT' && (
+                        <div className="alert alert-info border-0 mb-0">
+                          <i className="bi bi-clock me-2"></i>
+                          Admin is assigning a serviceman to your request
+                        </div>
+                      )}
+                      
+                      {(displayStatus === 'PENDING_ESTIMATION' || serviceRequest.status === 'ESTIMATION_SUBMITTED') && (
+                        <div className="alert alert-info border-0 mb-0">
+                          <i className="bi bi-calculator me-2"></i>
+                          {displayStatus === 'PENDING_ESTIMATION' 
+                            ? 'Serviceman is preparing your cost estimate'
+                            : 'Admin is reviewing the estimate'}
+                        </div>
+                      )}
+                      
+                      {serviceRequest.status === 'PAYMENT_COMPLETED' && (
+                        <div className="alert alert-success border-0 mb-0">
+                          <i className="bi bi-check-circle me-2"></i>
+                          Payment received! Serviceman will begin work soon.
+                        </div>
+                      )}
+                      
+                      {serviceRequest.status === 'IN_PROGRESS' && (
+                        <div className="alert alert-primary border-0 mb-0">
+                          <i className="bi bi-tools me-2"></i>
+                          Serviceman is currently working on your request
+                        </div>
+                      )}
+                      
+                      {serviceRequest.status === 'CLIENT_REVIEWED' && (
+                        <div className="alert alert-success border-0 mb-0">
+                          <i className="bi bi-check-all me-2"></i>
+                          Thank you for your review! Service complete.
+                        </div>
+                      )}
                     </div>
                   )}
 
                   {/* Serviceman Actions */}
                   {user?.user_type === 'SERVICEMAN' && (
                     <div className="d-grid gap-2">
-                      {serviceRequest.status === 'ASSIGNED_TO_SERVICEMAN' && (
-                        <>
-                          <button 
-                            className="btn btn-primary btn-lg"
-                            onClick={() => setShowEstimateModal(true)}
-                            disabled={actionLoading}
-                          >
-                            <i className="bi bi-calculator me-2"></i>
-                            {actionLoading ? 'Loading...' : 'Provide Cost Estimate'}
-                          </button>
-                          <button 
-                            className="btn btn-success"
-                            onClick={handleStartService}
-                            disabled={actionLoading}
-                          >
-                            <i className="bi bi-play-circle me-2"></i>
-                            {actionLoading ? 'Loading...' : 'Start Service'}
-                          </button>
-                        </>
+                      {/* STEP 3: Submit Estimate */}
+                      {(displayStatus === 'PENDING_ESTIMATION' || serviceRequest.status === 'PENDING_ESTIMATION') && (
+                        <button 
+                          className="btn btn-primary btn-lg"
+                          onClick={() => setShowEstimateModal(true)}
+                          disabled={actionLoading}
+                        >
+                          <i className="bi bi-calculator me-2"></i>
+                          {actionLoading ? 'Processing...' : 'Submit Cost Estimate'}
+                        </button>
                       )}
+                      
+                      {/* STEP 7: Complete Job */}
                       {serviceRequest.status === 'IN_PROGRESS' && (
                         <button 
                           className="btn btn-success btn-lg"
@@ -660,44 +882,140 @@ export default function ServiceRequestDetailPage() {
                           disabled={actionLoading}
                         >
                           <i className="bi bi-check-circle me-2"></i>
-                          {actionLoading ? 'Loading...' : 'Mark as Completed'}
+                          {actionLoading ? 'Processing...' : 'Mark Job as Complete'}
                         </button>
                       )}
-                      <button className="btn btn-outline-primary">
-                        <i className="bi bi-telephone me-2"></i>
-                        Contact Client
-                      </button>
+                      
+                      {/* Status Info */}
+                      {(serviceRequest.status === 'ESTIMATION_SUBMITTED' || serviceRequest.status === 'AWAITING_CLIENT_APPROVAL') && (
+                        <div className="alert alert-info border-0 mb-0">
+                          <i className="bi bi-info-circle me-2"></i>
+                          {serviceRequest.status === 'ESTIMATION_SUBMITTED' 
+                            ? 'Waiting for admin to finalize pricing'
+                            : 'Waiting for client to approve and pay'}
+                        </div>
+                      )}
+                      
+                      {serviceRequest.status === 'PAYMENT_COMPLETED' && (
+                        <div className="alert alert-success border-0 mb-0">
+                          <i className="bi bi-check-circle me-2"></i>
+                          Payment received! Admin will authorize work to begin.
+                        </div>
+                      )}
+                      
+                      {serviceRequest.status === 'COMPLETED' && (
+                        <div className="alert alert-success border-0 mb-0">
+                          <i className="bi bi-star me-2"></i>
+                          Job completed! Waiting for client review.
+                        </div>
+                      )}
+                      
+                      {serviceRequest.status === 'CLIENT_REVIEWED' && (
+                        <div className="alert alert-success border-0 mb-0">
+                          <i className="bi bi-check-all me-2"></i>
+                          All done! Client has reviewed your service.
+                        </div>
+                      )}
                     </div>
                   )}
 
                   {/* Admin Actions */}
                   {user?.user_type === 'ADMIN' && (
                     <div className="d-grid gap-2">
-                      {serviceRequest.status === 'PENDING_PAYMENT' && (
-                        <button className="btn btn-warning btn-lg" disabled>
-                          <i className="bi bi-clock me-2"></i>
-                          Waiting for Payment
-                        </button>
-                      )}
-                      {serviceRequest.status !== 'PENDING_PAYMENT' && serviceRequest.status !== 'COMPLETED' && !serviceRequest.serviceman && (
+                      {/* STEP 2: Assign/Reassign Serviceman */}
+                      {serviceRequest.status === 'PENDING_ADMIN_ASSIGNMENT' && (
                         <button 
-                          className="btn btn-primary"
+                          className="btn btn-primary btn-lg"
                           onClick={() => setShowAssignModal(true)}
                           disabled={actionLoading}
                         >
                           <i className="bi bi-person-plus me-2"></i>
-                          {actionLoading ? 'Loading...' : 'Assign Serviceman'}
+                          {actionLoading ? 'Processing...' : serviceRequest.serviceman ? 'Reassign Serviceman' : 'Assign Serviceman'}
                         </button>
                       )}
+                      
+                      {/* STEP 4: Finalize Price */}
+                      {serviceRequest.status === 'ESTIMATION_SUBMITTED' && (
+                        <button 
+                          className="btn btn-success btn-lg"
+                          onClick={() => setShowFinalizePriceModal(true)}
+                          disabled={actionLoading}
+                        >
+                          <i className="bi bi-currency-dollar me-2"></i>
+                          {actionLoading ? 'Processing...' : 'Finalize Price & Send to Client'}
+                        </button>
+                      )}
+                      
+                      {/* STEP 6: Authorize Work */}
+                      {serviceRequest.status === 'PAYMENT_COMPLETED' && (
+                        <button 
+                          className="btn btn-primary btn-lg"
+                          onClick={handleAuthorizeWork}
+                          disabled={actionLoading}
+                        >
+                          <i className="bi bi-play-circle me-2"></i>
+                          {actionLoading ? 'Processing...' : 'Authorize Work to Begin'}
+                        </button>
+                      )}
+                      
+                      {/* STEP 8: Confirm Completion */}
+                      {serviceRequest.status === 'COMPLETED' && serviceRequest.status !== 'CLIENT_REVIEWED' && (
+                        <button 
+                          className="btn btn-success btn-lg"
+                          onClick={() => setShowConfirmCompletionModal(true)}
+                          disabled={actionLoading}
+                        >
+                          <i className="bi bi-check2-all me-2"></i>
+                          {actionLoading ? 'Processing...' : 'Confirm to Client'}
+                        </button>
+                      )}
+                      
+                      {/* Serviceman Info */}
                       {serviceRequest.serviceman && (
-                        <div className="alert alert-info">
-                          <strong>Assigned to:</strong> {typeof serviceRequest.serviceman === 'object' ? serviceRequest.serviceman.username : `User #${serviceRequest.serviceman}`}
+                        <div className="alert alert-info border-0 shadow-sm mb-0">
+                          <div className="d-flex align-items-center">
+                            <i className="bi bi-person-check-fill fs-5 me-2 text-info"></i>
+                            <div className="flex-grow-1">
+                              <strong>Assigned:</strong> {typeof serviceRequest.serviceman === 'object' ? serviceRequest.serviceman.username : `User #${serviceRequest.serviceman}`}
+                              <div className="small text-muted mt-1">
+                                {displayStatus === 'PENDING_ESTIMATION' 
+                                  ? '⏳ Waiting for estimate'
+                                  : serviceRequest.status === 'ESTIMATION_SUBMITTED'
+                                  ? '💵 Estimate ready for review'
+                                  : serviceRequest.status === 'AWAITING_CLIENT_APPROVAL'
+                                  ? '⏰ Waiting for client payment'
+                                  : displayStatus === 'IN_PROGRESS'
+                                  ? '🔧 Working on service'
+                                  : displayStatus === 'COMPLETED'
+                                  ? '✅ Job completed'
+                                  : 'Assigned and notified'}
+                              </div>
+                            </div>
+                          </div>
                         </div>
                       )}
-                      <button className="btn btn-outline-info">
-                        <i className="bi bi-eye me-2"></i>
-                        View Full History
-                      </button>
+                      
+                      {/* Status Info Alerts */}
+                      {serviceRequest.status === 'AWAITING_CLIENT_APPROVAL' && (
+                        <div className="alert alert-warning border-0 mb-0">
+                          <i className="bi bi-clock me-2"></i>
+                          Waiting for client to approve price and pay
+                        </div>
+                      )}
+                      
+                      {serviceRequest.status === 'IN_PROGRESS' && (
+                        <div className="alert alert-primary border-0 mb-0">
+                          <i className="bi bi-tools me-2"></i>
+                          Serviceman is currently working on this job
+                        </div>
+                      )}
+                      
+                      {serviceRequest.status === 'CLIENT_REVIEWED' && (
+                        <div className="alert alert-success border-0 mb-0">
+                          <i className="bi bi-check-all me-2"></i>
+                          Workflow complete! Client has reviewed the service.
+                        </div>
+                      )}
                     </div>
                   )}
 
@@ -797,30 +1115,174 @@ export default function ServiceRequestDetailPage() {
         {/* Assign Serviceman Modal */}
         {showAssignModal && (
           <div className="modal show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
-            <div className="modal-dialog">
+            <div className="modal-dialog modal-lg">
               <div className="modal-content">
-                <div className="modal-header">
-                  <h5 className="modal-title">Assign Serviceman</h5>
-                  <button type="button" className="btn-close" onClick={() => setShowAssignModal(false)}></button>
+                <div className="modal-header bg-primary text-white">
+                  <h5 className="modal-title">
+                    <i className="bi bi-person-plus me-2"></i>
+                    {serviceRequest?.serviceman ? 'Reassign Serviceman' : 'Assign Serviceman'}
+                  </h5>
+                  <button type="button" className="btn-close btn-close-white" onClick={() => setShowAssignModal(false)}></button>
                 </div>
                 <div className="modal-body">
-                  <p>Select a serviceman to assign to this service request:</p>
-                  <div className="list-group">
-                    {availableServicemen.map((serviceman) => (
-                      <button
-                        key={serviceman.user}
-                        className={`list-group-item list-group-item-action ${selectedServiceman === serviceman.user ? 'active' : ''}`}
-                        onClick={() => setSelectedServiceman(serviceman.user)}
-                      >
-                        <div className="d-flex w-100 justify-content-between">
-                          <h6 className="mb-1">{typeof serviceman.user === 'object' ? serviceman.user.username : `User #${serviceman.user}`}</h6>
-                          <span className={`badge ${serviceman.is_available ? 'bg-success' : 'bg-secondary'}`}>
-                            {serviceman.is_available ? 'Available' : 'Busy'}
-                          </span>
+                  {/* Show Client's Preferred Serviceman if exists */}
+                  {serviceRequest?.preferred_serviceman && (
+                    <div className="alert alert-success border-success mb-3">
+                      <h6 className="alert-heading mb-2">
+                        <i className="bi bi-star-fill me-2"></i>
+                        Client's Preferred Serviceman
+                      </h6>
+                      <div className="d-flex align-items-center mb-2">
+                        <div className="flex-grow-1">
+                          <strong>
+                            {typeof serviceRequest.preferred_serviceman === 'object' && serviceRequest.preferred_serviceman.user
+                              ? (typeof serviceRequest.preferred_serviceman.user === 'object'
+                                  ? serviceRequest.preferred_serviceman.user.username
+                                  : `User #${serviceRequest.preferred_serviceman.user}`)
+                              : (typeof serviceRequest.preferred_serviceman === 'object'
+                                  ? serviceRequest.preferred_serviceman.username
+                                  : `User #${serviceRequest.preferred_serviceman}`)}
+                          </strong>
+                          {typeof serviceRequest.preferred_serviceman === 'object' && (
+                            <div className="small text-muted mt-1">
+                              ⭐ {serviceRequest.preferred_serviceman.rating} rating • 
+                              {serviceRequest.preferred_serviceman.total_jobs_completed} jobs completed •
+                              {serviceRequest.preferred_serviceman.is_available ? 
+                                <span className="text-success"> Available</span> : 
+                                <span className="text-warning"> Currently Busy</span>
+                              }
+                            </div>
+                          )}
                         </div>
-                        <p className="mb-1 small">Rating: {serviceman.rating}/5.0 | Jobs: {serviceman.total_jobs_completed}</p>
-                      </button>
-                    ))}
+                        {typeof serviceRequest.preferred_serviceman === 'object' && serviceRequest.preferred_serviceman.user && (
+                          <button
+                            className="btn btn-sm btn-success"
+                            onClick={() => setSelectedServiceman(typeof serviceRequest.preferred_serviceman.user === 'object' ? serviceRequest.preferred_serviceman.user.id : serviceRequest.preferred_serviceman.user)}
+                          >
+                            <i className="bi bi-check2 me-1"></i>
+                            Use This Serviceman
+                          </button>
+                        )}
+                      </div>
+                      <div className="small">
+                        <i className="bi bi-info-circle me-1"></i>
+                        The client selected this serviceman. You can assign them or choose someone else.
+                      </div>
+                    </div>
+                  )}
+                  
+                  {serviceRequest?.serviceman && (
+                    <div className="alert alert-info mb-3">
+                      <i className="bi bi-info-circle me-2"></i>
+                      <strong>Currently Assigned:</strong> {typeof serviceRequest.serviceman === 'object' ? serviceRequest.serviceman.username : `User #${serviceRequest.serviceman}`}
+                      <div className="small mt-1">Select a different serviceman to reassign this request</div>
+                    </div>
+                  )}
+                  
+                  <h6 className="mb-3">
+                    <i className="bi bi-person-check me-2"></i>
+                    Primary Serviceman (Required)
+                  </h6>
+                  
+                  {availableServicemen.length === 0 ? (
+                    <div className="alert alert-warning">
+                      <i className="bi bi-exclamation-triangle me-2"></i>
+                      No available servicemen found for this category. Please check back later or contact servicemen directly.
+                    </div>
+                  ) : (
+                    <div className="list-group">
+                      {availableServicemen.map((serviceman) => {
+                        const isCurrentlyAssigned = serviceRequest?.serviceman && 
+                          (typeof serviceRequest.serviceman === 'object' 
+                            ? serviceRequest.serviceman.id === serviceman.user 
+                            : serviceRequest.serviceman === serviceman.user);
+                        
+                        return (
+                          <button
+                            key={serviceman.user}
+                            className={`list-group-item list-group-item-action ${selectedServiceman === serviceman.user ? 'active' : ''} ${isCurrentlyAssigned ? 'border-primary' : ''}`}
+                            onClick={() => setSelectedServiceman(serviceman.user)}
+                          >
+                            <div className="d-flex w-100 justify-content-between align-items-start">
+                              <div className="flex-grow-1">
+                                <h6 className="mb-1">
+                                  {typeof serviceman.user === 'object' ? serviceman.user.username : `User #${serviceman.user}`}
+                                  {isCurrentlyAssigned && (
+                                    <span className="badge bg-primary ms-2" style={{ fontSize: '10px' }}>Current</span>
+                                  )}
+                                </h6>
+                                <div className="d-flex gap-3 small text-muted">
+                                  <span>
+                                    <i className="bi bi-star-fill text-warning me-1"></i>
+                                    {serviceman.rating}/5.0
+                                  </span>
+                                  <span>
+                                    <i className="bi bi-briefcase me-1"></i>
+                                    {serviceman.total_jobs_completed} jobs
+                                  </span>
+                                  {serviceman.years_of_experience && (
+                                    <span>
+                                      <i className="bi bi-clock-history me-1"></i>
+                                      {serviceman.years_of_experience} yrs exp
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                              <span className={`badge ${serviceman.is_available ? 'bg-success' : 'bg-secondary'}`}>
+                                {serviceman.is_available ? 'Available' : 'Busy'}
+                              </span>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                  
+                  {/* Backup Serviceman Selection */}
+                  <div className="mt-4">
+                    <h6 className="mb-3">
+                      <i className="bi bi-person-plus me-2"></i>
+                      Backup Serviceman (Recommended)
+                    </h6>
+                    <p className="small text-muted mb-3">
+                      Select a backup serviceman who can take over if the primary serviceman becomes unavailable.
+                    </p>
+                    {availableServicemen.length > 0 && (
+                      <select 
+                        className="form-select"
+                        value={selectedBackupServiceman || ''}
+                        onChange={(e) => setSelectedBackupServiceman(e.target.value ? parseInt(e.target.value) : null)}
+                      >
+                        <option value="">-- Optional: Select Backup Serviceman --</option>
+                        {availableServicemen
+                          .filter(s => s.user !== selectedServiceman)
+                          .map((serviceman) => (
+                            <option key={serviceman.user} value={serviceman.user}>
+                              {typeof serviceman.user === 'object' ? serviceman.user.username : `User #${serviceman.user}`} 
+                              {' '}⭐ {serviceman.rating} ({serviceman.total_jobs_completed} jobs)
+                              {serviceman.is_available ? ' ✓ Available' : ' ⚠ Busy'}
+                            </option>
+                          ))}
+                      </select>
+                    )}
+                  </div>
+                  
+                  {/* Admin Notes */}
+                  <div className="mt-4">
+                    <h6 className="mb-2">
+                      <i className="bi bi-pencil-square me-2"></i>
+                      Notes for Serviceman (Optional)
+                    </h6>
+                    <textarea
+                      className="form-control"
+                      rows={3}
+                      placeholder="Add any special instructions or notes for the serviceman..."
+                      value={assignmentNotes}
+                      onChange={(e) => setAssignmentNotes(e.target.value)}
+                    />
+                    <div className="small text-muted mt-1">
+                      These notes will be included in the notification sent to the serviceman.
+                    </div>
                   </div>
                 </div>
                 <div className="modal-footer">
@@ -829,9 +1291,10 @@ export default function ServiceRequestDetailPage() {
                     type="button" 
                     className="btn btn-primary" 
                     onClick={handleAssignServiceman}
-                    disabled={!selectedServiceman || actionLoading}
+                    disabled={!selectedServiceman || actionLoading || availableServicemen.length === 0}
                   >
-                    {actionLoading ? 'Assigning...' : 'Assign Serviceman'}
+                    <i className="bi bi-check2 me-1"></i>
+                    {actionLoading ? 'Assigning...' : serviceRequest?.serviceman ? 'Reassign' : 'Assign Servicemen & Send Notifications'}
                   </button>
                 </div>
               </div>
@@ -839,30 +1302,45 @@ export default function ServiceRequestDetailPage() {
           </div>
         )}
 
-        {/* Provide Estimate Modal */}
+        {/* STEP 3: Submit Estimate Modal (Serviceman) */}
         {showEstimateModal && (
           <div className="modal show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
             <div className="modal-dialog">
               <div className="modal-content">
-                <div className="modal-header">
-                  <h5 className="modal-title">Provide Cost Estimate</h5>
-                  <button type="button" className="btn-close" onClick={() => setShowEstimateModal(false)}></button>
+                <div className="modal-header bg-primary text-white">
+                  <h5 className="modal-title">
+                    <i className="bi bi-calculator me-2"></i>
+                    Submit Cost Estimate
+                  </h5>
+                  <button type="button" className="btn-close btn-close-white" onClick={() => setShowEstimateModal(false)}></button>
                 </div>
                 <div className="modal-body">
                   <div className="mb-3">
-                    <label className="form-label">Estimated Cost (₦)</label>
+                    <label className="form-label fw-bold">Estimated Cost (₦) <span className="text-danger">*</span></label>
                     <input
                       type="number"
                       className="form-control"
                       value={estimateAmount}
                       onChange={(e) => setEstimateAmount(e.target.value)}
-                      placeholder="Enter estimated cost"
+                      placeholder="e.g. 25000"
                       min="0"
                       step="100"
+                      required
                     />
                   </div>
-                  <div className="alert alert-info">
-                    <small>This estimate will be sent to the client for approval before work begins.</small>
+                  <div className="mb-3">
+                    <label className="form-label fw-bold">Notes (Optional)</label>
+                    <textarea
+                      className="form-control"
+                      rows={3}
+                      value={estimateNotes}
+                      onChange={(e) => setEstimateNotes(e.target.value)}
+                      placeholder="e.g. Includes parts replacement and 2 days labor"
+                    ></textarea>
+                  </div>
+                  <div className="alert alert-info mb-0">
+                    <i className="bi bi-info-circle me-2"></i>
+                    <small>Admin will review and add platform fee before sending to client</small>
                   </div>
                 </div>
                 <div className="modal-footer">
@@ -870,7 +1348,7 @@ export default function ServiceRequestDetailPage() {
                   <button 
                     type="button" 
                     className="btn btn-primary" 
-                    onClick={handleProvideEstimate}
+                    onClick={handleSubmitEstimate}
                     disabled={!estimateAmount || actionLoading}
                   >
                     {actionLoading ? 'Submitting...' : 'Submit Estimate'}
@@ -881,30 +1359,32 @@ export default function ServiceRequestDetailPage() {
           </div>
         )}
 
-        {/* Mark Completed Modal */}
+        {/* STEP 7: Complete Job Modal (Serviceman) */}
         {showCompleteModal && (
           <div className="modal show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
             <div className="modal-dialog">
               <div className="modal-content">
-                <div className="modal-header">
-                  <h5 className="modal-title">Mark Service as Completed</h5>
-                  <button type="button" className="btn-close" onClick={() => setShowCompleteModal(false)}></button>
+                <div className="modal-header bg-success text-white">
+                  <h5 className="modal-title">
+                    <i className="bi bi-check-circle me-2"></i>
+                    Complete Job
+                  </h5>
+                  <button type="button" className="btn-close btn-close-white" onClick={() => setShowCompleteModal(false)}></button>
                 </div>
                 <div className="modal-body">
                   <div className="mb-3">
-                    <label className="form-label">Final Cost (₦) - Optional</label>
-                    <input
-                      type="number"
+                    <label className="form-label fw-bold">Completion Notes (Optional)</label>
+                    <textarea
                       className="form-control"
-                      value={finalAmount}
-                      onChange={(e) => setFinalAmount(e.target.value)}
-                      placeholder="Enter final cost if different from estimate"
-                      min="0"
-                      step="100"
-                    />
+                      rows={3}
+                      value={completionNotes}
+                      onChange={(e) => setCompletionNotes(e.target.value)}
+                      placeholder="e.g. All pipes repaired and tested. No leaks detected."
+                    ></textarea>
                   </div>
-                  <div className="alert alert-success">
-                    <small>Marking this service as completed will notify the client and allow them to rate the service.</small>
+                  <div className="alert alert-success mb-0">
+                    <i className="bi bi-info-circle me-2"></i>
+                    <small>Admin will verify and notify the client. Client can then rate your service.</small>
                   </div>
                 </div>
                 <div className="modal-footer">
@@ -912,10 +1392,183 @@ export default function ServiceRequestDetailPage() {
                   <button 
                     type="button" 
                     className="btn btn-success" 
-                    onClick={handleMarkCompleted}
+                    onClick={handleCompleteJob}
                     disabled={actionLoading}
                   >
-                    {actionLoading ? 'Completing...' : 'Mark as Completed'}
+                    {actionLoading ? 'Processing...' : 'Mark Job Complete'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* STEP 4: Finalize Price Modal (Admin) */}
+        {showFinalizePriceModal && (
+          <div className="modal show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+            <div className="modal-dialog">
+              <div className="modal-content">
+                <div className="modal-header bg-success text-white">
+                  <h5 className="modal-title">
+                    <i className="bi bi-currency-dollar me-2"></i>
+                    Finalize Pricing
+                  </h5>
+                  <button type="button" className="btn-close btn-close-white" onClick={() => setShowFinalizePriceModal(false)}></button>
+                </div>
+                <div className="modal-body">
+                  <div className="alert alert-info mb-3">
+                    <strong>Serviceman's Estimate:</strong> ₦{serviceRequest?.serviceman_estimated_cost ? parseFloat(serviceRequest.serviceman_estimated_cost).toLocaleString() : '0'}
+                  </div>
+                  <div className="mb-3">
+                    <label className="form-label fw-bold">Platform Fee (%) <span className="text-danger">*</span></label>
+                    <input
+                      type="number"
+                      className="form-control"
+                      value={markupPercentage}
+                      onChange={(e) => setMarkupPercentage(e.target.value)}
+                      placeholder="10"
+                      min="0"
+                      max="100"
+                      step="1"
+                      required
+                    />
+                    <small className="text-muted">Standard platform fee is 10%</small>
+                  </div>
+                  <div className="mb-3">
+                    <label className="form-label fw-bold">Admin Notes (Optional)</label>
+                    <textarea
+                      className="form-control"
+                      rows={2}
+                      value={adminNotes}
+                      onChange={(e) => setAdminNotes(e.target.value)}
+                      placeholder="e.g. Price includes all materials and labor"
+                    ></textarea>
+                  </div>
+                  {markupPercentage && serviceRequest?.serviceman_estimated_cost && (
+                    <div className="alert alert-success mb-0">
+                      <strong>Final Price:</strong> ₦{Math.round(parseFloat(serviceRequest.serviceman_estimated_cost) * (1 + parseFloat(markupPercentage) / 100)).toLocaleString()}
+                      <div className="small mt-1">
+                        (Base: ₦{parseFloat(serviceRequest.serviceman_estimated_cost).toLocaleString()} + Fee: ₦{Math.round(parseFloat(serviceRequest.serviceman_estimated_cost) * parseFloat(markupPercentage) / 100).toLocaleString()})
+                      </div>
+                    </div>
+                  )}
+                </div>
+                <div className="modal-footer">
+                  <button type="button" className="btn btn-secondary" onClick={() => setShowFinalizePriceModal(false)}>Cancel</button>
+                  <button 
+                    type="button" 
+                    className="btn btn-success" 
+                    onClick={handleFinalizePrice}
+                    disabled={!markupPercentage || actionLoading}
+                  >
+                    {actionLoading ? 'Processing...' : 'Finalize & Send to Client'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* STEP 8: Confirm Completion Modal (Admin) */}
+        {showConfirmCompletionModal && (
+          <div className="modal show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+            <div className="modal-dialog">
+              <div className="modal-content">
+                <div className="modal-header bg-primary text-white">
+                  <h5 className="modal-title">
+                    <i className="bi bi-check2-all me-2"></i>
+                    Confirm Completion to Client
+                  </h5>
+                  <button type="button" className="btn-close btn-close-white" onClick={() => setShowConfirmCompletionModal(false)}></button>
+                </div>
+                <div className="modal-body">
+                  <div className="mb-3">
+                    <label className="form-label fw-bold">Message to Client (Optional)</label>
+                    <textarea
+                      className="form-control"
+                      rows={3}
+                      value={messageToClient}
+                      onChange={(e) => setMessageToClient(e.target.value)}
+                      placeholder="e.g. Work has been verified and completed successfully. Please check and rate the service."
+                    ></textarea>
+                  </div>
+                  <div className="alert alert-success mb-0">
+                    <i className="bi bi-info-circle me-2"></i>
+                    <small>Client will be notified and asked to rate the serviceman</small>
+                  </div>
+                </div>
+                <div className="modal-footer">
+                  <button type="button" className="btn btn-secondary" onClick={() => setShowConfirmCompletionModal(false)}>Cancel</button>
+                  <button 
+                    type="button" 
+                    className="btn btn-primary" 
+                    onClick={handleConfirmCompletion}
+                    disabled={actionLoading}
+                  >
+                    {actionLoading ? 'Processing...' : 'Confirm to Client'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* STEP 9: Submit Review Modal (Client) */}
+        {showReviewModal && (
+          <div className="modal show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+            <div className="modal-dialog">
+              <div className="modal-content">
+                <div className="modal-header bg-warning text-dark">
+                  <h5 className="modal-title">
+                    <i className="bi bi-star me-2"></i>
+                    Rate Your Experience
+                  </h5>
+                  <button type="button" className="btn-close" onClick={() => setShowReviewModal(false)}></button>
+                </div>
+                <div className="modal-body">
+                  <div className="mb-3 text-center">
+                    <label className="form-label fw-bold">Rating <span className="text-danger">*</span></label>
+                    <div className="d-flex justify-content-center gap-2">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <button
+                          key={star}
+                          type="button"
+                          className="btn btn-link p-0"
+                          onClick={() => setRating(star)}
+                          style={{ fontSize: '2rem', textDecoration: 'none' }}
+                        >
+                          {star <= rating ? '⭐' : '☆'}
+                        </button>
+                      ))}
+                    </div>
+                    <div className="mt-2 text-muted">
+                      {rating === 5 ? 'Excellent!' : rating === 4 ? 'Good' : rating === 3 ? 'Average' : rating === 2 ? 'Below Average' : 'Poor'}
+                    </div>
+                  </div>
+                  <div className="mb-3">
+                    <label className="form-label fw-bold">Review (Optional)</label>
+                    <textarea
+                      className="form-control"
+                      rows={4}
+                      value={reviewText}
+                      onChange={(e) => setReviewText(e.target.value)}
+                      placeholder="Tell us about your experience with this serviceman..."
+                    ></textarea>
+                  </div>
+                  <div className="alert alert-info mb-0">
+                    <i className="bi bi-info-circle me-2"></i>
+                    <small>Your feedback helps us maintain quality service</small>
+                  </div>
+                </div>
+                <div className="modal-footer">
+                  <button type="button" className="btn btn-secondary" onClick={() => setShowReviewModal(false)}>Cancel</button>
+                  <button 
+                    type="button" 
+                    className="btn btn-warning" 
+                    onClick={handleSubmitReview}
+                    disabled={actionLoading}
+                  >
+                    {actionLoading ? 'Submitting...' : 'Submit Review'}
                   </button>
                 </div>
               </div>

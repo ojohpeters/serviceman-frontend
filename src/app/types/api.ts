@@ -152,8 +152,9 @@ export type ServiceRequestStatusType = ServiceRequestStatus | string;
 export interface ServiceRequest {
   id: number;
   client: User;
-  serviceman: User | null;
-  backup_serviceman: User | null;
+  preferred_serviceman: User | ServicemanProfile | null; // NEW: Client's preferred serviceman
+  serviceman: User | null; // Admin-assigned primary serviceman
+  backup_serviceman: User | null; // Admin-assigned backup serviceman
   category: Category;
   booking_date: string;
   is_emergency: boolean;
@@ -179,6 +180,7 @@ export interface CreateServiceRequestData {
   client_address: string;
   service_description: string;
   initial_booking_fee: number;
+  preferred_serviceman_id?: number; // NEW: Optional preferred serviceman selection
 }
 
 // ==================== Payment Types ====================

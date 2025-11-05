@@ -19,26 +19,27 @@ export interface StatusConfig {
   nextStatus?: string[];
 }
 
-// Status configuration map
+// Status configuration map - Based on Official API Guide
+// Using Bootstrap 5 classes for consistent UI
 const statusConfigs: Record<string, StatusConfig> = {
-  // Initial State
+  // --- Initial State ---
   [ServiceRequestStatus.PENDING_ADMIN_ASSIGNMENT]: {
     label: "Waiting for Assignment",
     description: "Waiting for admin to assign a serviceman",
-    color: "yellow",
-    badgeClass: "bg-yellow-100 text-yellow-800",
+    color: "warning",
+    badgeClass: "bg-warning text-dark",
     icon: "clock",
     canCancel: true,
     isActionRequired: false,
     progressPercent: 0,
   },
   
-  // Estimation Phase
+  // --- Estimation Phase ---
   [ServiceRequestStatus.PENDING_ESTIMATION]: {
     label: "Pending Estimation",
     description: "Serviceman is preparing your estimate",
-    color: "blue",
-    badgeClass: "bg-blue-100 text-blue-800",
+    color: "info",
+    badgeClass: "bg-info text-white",
     icon: "calculator",
     canCancel: true,
     isActionRequired: false,
@@ -48,20 +49,20 @@ const statusConfigs: Record<string, StatusConfig> = {
   [ServiceRequestStatus.ESTIMATION_SUBMITTED]: {
     label: "Processing Estimate",
     description: "Admin is adding platform fees",
-    color: "orange",
-    badgeClass: "bg-orange-100 text-orange-800",
-    icon: "document",
+    color: "warning",
+    badgeClass: "bg-warning text-dark",
+    icon: "file-earmark-check",
     canCancel: true,
     isActionRequired: false,
     progressPercent: 25,
   },
   
-  // Client Approval & Payment Phase
+  // --- Client Approval & Payment Phase ---
   [ServiceRequestStatus.AWAITING_CLIENT_APPROVAL]: {
     label: "Awaiting Your Approval",
     description: "Please review and pay the final amount",
-    color: "amber",
-    badgeClass: "bg-amber-100 text-amber-800",
+    color: "warning",
+    badgeClass: "bg-warning text-dark",
     icon: "credit-card",
     canCancel: true,
     isActionRequired: true,
@@ -72,21 +73,21 @@ const statusConfigs: Record<string, StatusConfig> = {
   [ServiceRequestStatus.PAYMENT_COMPLETED]: {
     label: "Ready to Start",
     description: "Payment received. Serviceman will begin work soon",
-    color: "green",
-    badgeClass: "bg-green-100 text-green-800",
+    color: "success",
+    badgeClass: "bg-success text-white",
     icon: "check-circle",
     canCancel: false,
     isActionRequired: false,
     progressPercent: 50,
   },
   
-  // Execution Phase
+  // --- Execution Phase ---
   [ServiceRequestStatus.IN_PROGRESS]: {
     label: "Work in Progress",
     description: "Service is currently being performed",
-    color: "indigo",
-    badgeClass: "bg-indigo-100 text-indigo-800",
-    icon: "wrench",
+    color: "primary",
+    badgeClass: "bg-primary text-white",
+    icon: "tools",
     canCancel: false,
     isActionRequired: false,
     progressPercent: 62,
@@ -95,47 +96,47 @@ const statusConfigs: Record<string, StatusConfig> = {
   [ServiceRequestStatus.COMPLETED]: {
     label: "Service Completed",
     description: "Please rate your experience",
-    color: "green",
-    badgeClass: "bg-green-100 text-green-800",
-    icon: "check-badge",
+    color: "success",
+    badgeClass: "bg-success text-white",
+    icon: "check-circle-fill",
     canCancel: false,
     isActionRequired: true,
     requiresReview: true,
     progressPercent: 75,
   },
   
-  // Final State
+  // --- Final State ---
   [ServiceRequestStatus.CLIENT_REVIEWED]: {
     label: "All Done!",
     description: "Thank you for using ServiceMan",
-    color: "purple",
-    badgeClass: "bg-purple-100 text-purple-800",
-    icon: "sparkles",
+    color: "success",
+    badgeClass: "bg-success text-white",
+    icon: "star-fill",
     canCancel: false,
     isActionRequired: false,
     isFinal: true,
     progressPercent: 100,
   },
   
-  // Cancellation State
+  // --- Cancellation State ---
   [ServiceRequestStatus.CANCELLED]: {
     label: "Cancelled",
     description: "This request was cancelled",
-    color: "gray",
-    badgeClass: "bg-gray-100 text-gray-800",
+    color: "secondary",
+    badgeClass: "bg-secondary text-white",
     icon: "x-circle",
     canCancel: false,
     isActionRequired: false,
     progressPercent: 0,
   },
   
-  // Legacy Statuses
+  // --- Legacy Statuses (Deprecated but still in database) ---
   [ServiceRequestStatus.ASSIGNED_TO_SERVICEMAN]: {
-    label: "Assigned",
-    description: "Serviceman has been assigned",
-    color: "blue",
-    badgeClass: "bg-blue-100 text-blue-800",
-    icon: "user-check",
+    label: "Assigned to Serviceman",
+    description: "Serviceman has been assigned to your request",
+    color: "info",
+    badgeClass: "bg-info text-white",
+    icon: "person-check",
     canCancel: true,
     isActionRequired: false,
     progressPercent: 12,
@@ -144,8 +145,8 @@ const statusConfigs: Record<string, StatusConfig> = {
   [ServiceRequestStatus.SERVICEMAN_INSPECTED]: {
     label: "Inspected",
     description: "Site inspection completed",
-    color: "cyan",
-    badgeClass: "bg-cyan-100 text-cyan-800",
+    color: "info",
+    badgeClass: "bg-info text-white",
     icon: "eye",
     canCancel: true,
     isActionRequired: false,
@@ -155,9 +156,9 @@ const statusConfigs: Record<string, StatusConfig> = {
   [ServiceRequestStatus.NEGOTIATING]: {
     label: "Negotiating",
     description: "Price negotiation in progress",
-    color: "amber",
-    badgeClass: "bg-amber-100 text-amber-800",
-    icon: "chat",
+    color: "warning",
+    badgeClass: "bg-warning text-dark",
+    icon: "chat-dots",
     canCancel: true,
     isActionRequired: false,
     progressPercent: 25,
@@ -166,8 +167,8 @@ const statusConfigs: Record<string, StatusConfig> = {
   [ServiceRequestStatus.AWAITING_PAYMENT]: {
     label: "Awaiting Payment",
     description: "Payment pending",
-    color: "orange",
-    badgeClass: "bg-orange-100 text-orange-800",
+    color: "warning",
+    badgeClass: "bg-warning text-dark",
     icon: "credit-card",
     canCancel: true,
     isActionRequired: true,
@@ -178,8 +179,8 @@ const statusConfigs: Record<string, StatusConfig> = {
   [ServiceRequestStatus.PAYMENT_CONFIRMED]: {
     label: "Payment Confirmed",
     description: "Payment has been confirmed",
-    color: "green",
-    badgeClass: "bg-green-100 text-green-800",
+    color: "success",
+    badgeClass: "bg-success text-white",
     icon: "check-circle",
     canCancel: false,
     isActionRequired: false,

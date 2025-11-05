@@ -110,7 +110,19 @@ api.interceptors.response.use(
     // If this is a refresh token request that failed, don't try to refresh again
     if (error.response?.status === 401 && originalRequest?.url?.includes('/token/refresh/')) {
       logout(); // clear tokens
-      window.location.href = "/auth/login"; // redirect to login
+      
+      // Only redirect if NOT already on a login page (prevent loop)
+      if (typeof window !== 'undefined') {
+        const currentPath = window.location.pathname;
+        const isAlreadyOnLoginPage = currentPath === '/auth/login' || currentPath === '/admin/login';
+        
+        if (!isAlreadyOnLoginPage) {
+          window.location.href = "/auth/login";
+        } else {
+          console.log('ℹ️ [API Interceptor] Already on login page, skipping redirect');
+        }
+      }
+      
       return Promise.reject(error);
     }
 
@@ -162,14 +174,21 @@ api.interceptors.response.use(
         // Handle NO_REFRESH_TOKEN gracefully (not a real error, just session expired)
         if (err.message === 'NO_REFRESH_TOKEN') {
           console.log('⚠️ [API Interceptor] No refresh token available');
-          console.log('🚪 [API Interceptor] Redirecting to login');
           
-          // Determine redirect URL based on current path
+          // Only redirect if NOT already on a login page (prevent loop)
           if (typeof window !== 'undefined') {
-            const isAdminPath = window.location.pathname.startsWith('/admin');
-            setTimeout(() => {
-              window.location.href = isAdminPath ? "/admin/login" : "/auth/login";
-            }, 100);
+            const currentPath = window.location.pathname;
+            const isAlreadyOnLoginPage = currentPath === '/auth/login' || currentPath === '/admin/login';
+            
+            if (!isAlreadyOnLoginPage) {
+              console.log('🚪 [API Interceptor] Redirecting to login');
+              const isAdminPath = currentPath.startsWith('/admin');
+              setTimeout(() => {
+                window.location.href = isAdminPath ? "/admin/login" : "/auth/login";
+              }, 100);
+            } else {
+              console.log('ℹ️ [API Interceptor] Already on login page, skipping redirect');
+            }
           }
           
           // Don't show error message - just reject silently
@@ -181,10 +200,17 @@ api.interceptors.response.use(
           console.log('🚪 [API Interceptor] Logging out and redirecting to login');
           logout(); // clear tokens
           
-          // Determine redirect URL based on current path
+          // Only redirect if NOT already on a login page (prevent loop)
           if (typeof window !== 'undefined') {
-            const isAdminPath = window.location.pathname.startsWith('/admin');
-            window.location.href = isAdminPath ? "/admin/login" : "/auth/login";
+            const currentPath = window.location.pathname;
+            const isAlreadyOnLoginPage = currentPath === '/auth/login' || currentPath === '/admin/login';
+            
+            if (!isAlreadyOnLoginPage) {
+              const isAdminPath = currentPath.startsWith('/admin');
+              window.location.href = isAdminPath ? "/admin/login" : "/auth/login";
+            } else {
+              console.log('ℹ️ [API Interceptor] Already on login page, skipping redirect');
+            }
           }
         }
         

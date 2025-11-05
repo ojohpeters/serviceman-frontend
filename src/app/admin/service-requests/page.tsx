@@ -1,8 +1,9 @@
 'use client';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAdmin } from '../../hooks/useAdmin';
 import { useServiceRequests } from '../../hooks/useAPI';
+import { getStatusConfig } from '../../utils/statusHelpers';
 import AdminGuard from '../../components/admin/AdminGuard';
 import Link from 'next/link';
 import type { ServiceRequest } from '../../types/api';
@@ -15,26 +16,14 @@ export default function AdminServiceRequestsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [showEmergencyOnly, setShowEmergencyOnly] = useState(false);
 
-  // Redirect if not admin
-  if (!adminLoading && !isAdmin) {
-    router.push('/admin/login');
-    return null;
-  }
+  // Redirect if not admin (use useEffect to avoid setState during render)
+  useEffect(() => {
+    if (!adminLoading && !isAdmin) {
+      router.push('/admin/login');
+    }
+  }, [adminLoading, isAdmin, router]);
 
-  if (adminLoading) {
-    return (
-      <div className="container mt-5">
-        <div className="text-center py-5">
-          <div className="spinner-border text-primary" role="status">
-            <span className="visually-hidden">Loading...</span>
-          </div>
-          <p className="mt-3">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Filter requests
+  // Filter requests - MUST be called before any early returns
   const filteredRequests = useMemo(() => {
     // Handle undefined/null serviceRequests
     if (!serviceRequests || !Array.isArray(serviceRequests)) {
@@ -90,45 +79,48 @@ export default function AdminServiceRequestsPage() {
     return {
       total: serviceRequests.length,
       pendingAssignment: serviceRequests.filter((r: ServiceRequest) => r.status === 'PENDING_ADMIN_ASSIGNMENT').length,
+      pendingEstimation: serviceRequests.filter((r: ServiceRequest) => r.status === 'PENDING_ESTIMATION').length,
+      estimationSubmitted: serviceRequests.filter((r: ServiceRequest) => r.status === 'ESTIMATION_SUBMITTED').length,
+      awaitingApproval: serviceRequests.filter((r: ServiceRequest) => r.status === 'AWAITING_CLIENT_APPROVAL').length,
+      paymentCompleted: serviceRequests.filter((r: ServiceRequest) => r.status === 'PAYMENT_COMPLETED').length,
+      inProgress: serviceRequests.filter((r: ServiceRequest) => r.status === 'IN_PROGRESS').length,
+      completed: serviceRequests.filter((r: ServiceRequest) => r.status === 'COMPLETED').length,
+      clientReviewed: serviceRequests.filter((r: ServiceRequest) => r.status === 'CLIENT_REVIEWED').length,
+      cancelled: serviceRequests.filter((r: ServiceRequest) => r.status === 'CANCELLED').length,
+      // Legacy statuses
       assigned: serviceRequests.filter((r: ServiceRequest) => r.status === 'ASSIGNED_TO_SERVICEMAN').length,
       inspected: serviceRequests.filter((r: ServiceRequest) => r.status === 'SERVICEMAN_INSPECTED').length,
-      awaitingApproval: serviceRequests.filter((r: ServiceRequest) => r.status === 'AWAITING_CLIENT_APPROVAL').length,
       negotiating: serviceRequests.filter((r: ServiceRequest) => r.status === 'NEGOTIATING').length,
       awaitingPayment: serviceRequests.filter((r: ServiceRequest) => r.status === 'AWAITING_PAYMENT').length,
       paymentConfirmed: serviceRequests.filter((r: ServiceRequest) => r.status === 'PAYMENT_CONFIRMED').length,
-      inProgress: serviceRequests.filter((r: ServiceRequest) => r.status === 'IN_PROGRESS').length,
-      completed: serviceRequests.filter((r: ServiceRequest) => r.status === 'COMPLETED').length,
-      cancelled: serviceRequests.filter((r: ServiceRequest) => r.status === 'CANCELLED').length,
       emergency: serviceRequests.filter((r: ServiceRequest) => r.is_emergency).length,
     };
   }, [serviceRequests]);
 
+  // Use centralized status configuration
   const getStatusBadgeClass = (status: string) => {
-    switch (status) {
-      case 'PENDING_ADMIN_ASSIGNMENT':
-        return 'bg-warning text-dark';
-      case 'ASSIGNED_TO_SERVICEMAN':
-        return 'bg-info text-white';
-      case 'SERVICEMAN_INSPECTED':
-        return 'bg-cyan text-white';
-      case 'AWAITING_CLIENT_APPROVAL':
-        return 'bg-warning text-dark';
-      case 'NEGOTIATING':
-        return 'bg-orange text-white';
-      case 'AWAITING_PAYMENT':
-        return 'bg-danger text-white';
-      case 'PAYMENT_CONFIRMED':
-        return 'bg-success text-white';
-      case 'IN_PROGRESS':
-        return 'bg-primary text-white';
-      case 'COMPLETED':
-        return 'bg-success text-white';
-      case 'CANCELLED':
-        return 'bg-secondary text-white';
-      default:
-        return 'bg-secondary text-white';
-    }
+    const config = getStatusConfig(status);
+    return config.badgeClass;
   };
+
+  const getStatusLabel = (status: string) => {
+    const config = getStatusConfig(status);
+    return config.label;
+  };
+
+  // Show loading state AFTER all hooks are called
+  if (adminLoading) {
+    return (
+      <div className="container mt-5">
+        <div className="text-center py-5">
+          <div className="spinner-border text-primary" role="status">
+            <span className="visually-hidden">Loading...</span>
+          </div>
+          <p className="mt-3">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <AdminGuard>
@@ -147,9 +139,9 @@ export default function AdminServiceRequestsPage() {
           </button>
         </div>
 
-        {/* Statistics Cards */}
+        {/* Statistics Cards - Based on API Guide Status Flow */}
         <div className="row mb-4">
-          <div className="col-lg-2 col-md-4 col-sm-6 mb-3">
+          <div className="col-lg-2 col-md-3 col-sm-6 mb-3">
             <div className="card border-0 shadow-sm">
               <div className="card-body p-3">
                 <h4 className="mb-1">{stats.total}</h4>
@@ -157,39 +149,47 @@ export default function AdminServiceRequestsPage() {
               </div>
             </div>
           </div>
-          <div className="col-lg-2 col-md-4 col-sm-6 mb-3">
+          <div className="col-lg-2 col-md-3 col-sm-6 mb-3">
             <div className="card border-0 shadow-sm bg-warning bg-opacity-10">
               <div className="card-body p-3">
                 <h4 className="mb-1 text-warning">{stats.pendingAssignment}</h4>
-                <p className="mb-0 small text-muted">Pending</p>
+                <p className="mb-0 small text-muted">Need Assign</p>
               </div>
             </div>
           </div>
-          <div className="col-lg-2 col-md-4 col-sm-6 mb-3">
+          <div className="col-lg-2 col-md-3 col-sm-6 mb-3">
+            <div className="card border-0 shadow-sm bg-info bg-opacity-10">
+              <div className="card-body p-3">
+                <h4 className="mb-1 text-info">{stats.pendingEstimation}</h4>
+                <p className="mb-0 small text-muted">Need Estimate</p>
+              </div>
+            </div>
+          </div>
+          <div className="col-lg-2 col-md-3 col-sm-6 mb-3">
+            <div className="card border-0 shadow-sm bg-warning bg-opacity-10">
+              <div className="card-body p-3">
+                <h4 className="mb-1 text-warning">{stats.awaitingApproval}</h4>
+                <p className="mb-0 small text-muted">Client Review</p>
+              </div>
+            </div>
+          </div>
+          <div className="col-lg-2 col-md-3 col-sm-6 mb-3">
             <div className="card border-0 shadow-sm bg-primary bg-opacity-10">
               <div className="card-body p-3">
                 <h4 className="mb-1 text-primary">{stats.inProgress}</h4>
-                <p className="mb-0 small text-muted">In Progress</p>
+                <p className="mb-0 small text-muted">Active Jobs</p>
               </div>
             </div>
           </div>
-          <div className="col-lg-2 col-md-4 col-sm-6 mb-3">
-            <div className="card border-0 shadow-sm bg-danger bg-opacity-10">
-              <div className="card-body p-3">
-                <h4 className="mb-1 text-danger">{stats.awaitingPayment}</h4>
-                <p className="mb-0 small text-muted">Await Payment</p>
-              </div>
-            </div>
-          </div>
-          <div className="col-lg-2 col-md-4 col-sm-6 mb-3">
+          <div className="col-lg-2 col-md-3 col-sm-6 mb-3">
             <div className="card border-0 shadow-sm bg-success bg-opacity-10">
               <div className="card-body p-3">
-                <h4 className="mb-1 text-success">{stats.completed}</h4>
+                <h4 className="mb-1 text-success">{stats.completed + stats.clientReviewed}</h4>
                 <p className="mb-0 small text-muted">Completed</p>
               </div>
             </div>
           </div>
-          <div className="col-lg-2 col-md-4 col-sm-6 mb-3">
+          <div className="col-lg-2 col-md-3 col-sm-6 mb-3">
             <div className="card border-0 shadow-sm border-danger">
               <div className="card-body p-3">
                 <h4 className="mb-1 text-danger">{stats.emergency}</h4>
@@ -219,16 +219,24 @@ export default function AdminServiceRequestsPage() {
                   onChange={(e) => setFilterStatus(e.target.value)}
                 >
                   <option value="all">All Statuses</option>
-                  <option value="PENDING_ADMIN_ASSIGNMENT">⏳ Pending Assignment</option>
-                  <option value="ASSIGNED_TO_SERVICEMAN">👷 Assigned to Serviceman</option>
-                  <option value="SERVICEMAN_INSPECTED">🔍 Inspected (Estimate Given)</option>
-                  <option value="AWAITING_CLIENT_APPROVAL">⏱️ Awaiting Client Approval</option>
-                  <option value="NEGOTIATING">💬 Negotiating Price</option>
-                  <option value="AWAITING_PAYMENT">💳 Awaiting Payment</option>
-                  <option value="PAYMENT_CONFIRMED">✅ Payment Confirmed</option>
-                  <option value="IN_PROGRESS">🔧 Work In Progress</option>
-                  <option value="COMPLETED">✅ Completed</option>
-                  <option value="CANCELLED">❌ Cancelled</option>
+                  <optgroup label="— Current Status Flow —">
+                    <option value="PENDING_ADMIN_ASSIGNMENT">⏳ Waiting for Assignment</option>
+                    <option value="PENDING_ESTIMATION">🧮 Pending Estimation</option>
+                    <option value="ESTIMATION_SUBMITTED">📋 Processing Estimate</option>
+                    <option value="AWAITING_CLIENT_APPROVAL">⏱️ Awaiting Client Approval</option>
+                    <option value="PAYMENT_COMPLETED">💰 Payment Completed</option>
+                    <option value="IN_PROGRESS">🔧 Work In Progress</option>
+                    <option value="COMPLETED">✅ Completed</option>
+                    <option value="CLIENT_REVIEWED">⭐ Client Reviewed</option>
+                    <option value="CANCELLED">❌ Cancelled</option>
+                  </optgroup>
+                  <optgroup label="— Legacy Statuses —">
+                    <option value="ASSIGNED_TO_SERVICEMAN">👷 Assigned to Serviceman</option>
+                    <option value="SERVICEMAN_INSPECTED">🔍 Inspected</option>
+                    <option value="NEGOTIATING">💬 Negotiating</option>
+                    <option value="AWAITING_PAYMENT">💳 Awaiting Payment</option>
+                    <option value="PAYMENT_CONFIRMED">✅ Payment Confirmed</option>
+                  </optgroup>
                 </select>
               </div>
               <div className="col-md-4">
@@ -322,7 +330,7 @@ export default function AdminServiceRequestsPage() {
                         <td>{new Date(request.booking_date).toLocaleDateString()}</td>
                         <td>
                           <span className={`badge ${getStatusBadgeClass(request.status)}`}>
-                            {request.status.replace(/_/g, ' ')}
+                            {getStatusLabel(request.status)}
                           </span>
                         </td>
                         <td>

@@ -23,9 +23,17 @@ export default function JobHistory({ className = '' }: JobHistoryProps) {
     limit: 50
   });
 
+  // Normalize jobHistory to always be an array
+  const jobHistoryArray = useMemo(() => {
+    if (!jobHistory) return [];
+    if (Array.isArray(jobHistory)) return jobHistory;
+    if (jobHistory.results && Array.isArray(jobHistory.results)) return jobHistory.results;
+    return [];
+  }, [jobHistory]);
+
   // Calculate statistics
   const stats = useMemo(() => {
-    if (!jobHistory || !Array.isArray(jobHistory)) {
+    if (!jobHistoryArray || jobHistoryArray.length === 0) {
       return {
         totalJobs: 0,
         completedJobs: 0,
@@ -35,15 +43,15 @@ export default function JobHistory({ className = '' }: JobHistoryProps) {
       };
     }
 
-    const totalJobs = jobHistory.length;
-    const completedJobs = jobHistory.filter((job: any) => job.status === 'COMPLETED').length;
-    const inProgressJobs = jobHistory.filter((job: any) => job.status === 'IN_PROGRESS').length;
-    const totalEarnings = jobHistory
+    const totalJobs = jobHistoryArray.length;
+    const completedJobs = jobHistoryArray.filter((job: any) => job.status === 'COMPLETED').length;
+    const inProgressJobs = jobHistoryArray.filter((job: any) => job.status === 'IN_PROGRESS').length;
+    const totalEarnings = jobHistoryArray
       .filter((job: any) => job.final_cost)
       .reduce((sum: number, job: any) => sum + parseFloat(job.final_cost || 0), 0);
     
     // Calculate average rating if available
-    const jobsWithRating = jobHistory.filter((job: any) => job.rating);
+    const jobsWithRating = jobHistoryArray.filter((job: any) => job.rating);
     const averageRating = jobsWithRating.length > 0 
       ? jobsWithRating.reduce((sum: number, job: any) => sum + (job.rating || 0), 0) / jobsWithRating.length
       : 0;
@@ -55,7 +63,7 @@ export default function JobHistory({ className = '' }: JobHistoryProps) {
       totalEarnings,
       averageRating
     };
-  }, [jobHistory]);
+  }, [jobHistoryArray]);
 
   const getStatusBadgeClass = (status: string) => {
     switch (status) {
@@ -201,7 +209,7 @@ export default function JobHistory({ className = '' }: JobHistoryProps) {
         {/* Job History Table */}
         {!loading && !error && (
           <>
-            {!jobHistory || jobHistory.length === 0 ? (
+            {jobHistoryArray.length === 0 ? (
               <div className="text-center py-5">
                 <i className="bi bi-clock-history fs-1 text-muted mb-3"></i>
                 <h6 className="text-muted">No job history found</h6>
@@ -224,7 +232,7 @@ export default function JobHistory({ className = '' }: JobHistoryProps) {
                     </tr>
                   </thead>
                   <tbody>
-                    {jobHistory.map((job: any) => (
+                    {jobHistoryArray.map((job: any) => (
                       <tr key={job.id}>
                         <td>
                           <span className="fw-medium">#{job.id}</span>

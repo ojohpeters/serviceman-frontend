@@ -57,15 +57,15 @@ export const notificationsService = {
    * @param notificationId - Notification ID
    */
   markAsRead: async (notificationId: number): Promise<{ detail: string }> => {
-    const response = await api.post(`/notifications/${notificationId}/read/`);
+    const response = await api.patch(`/notifications/${notificationId}/read/`);
     return response.data;
   },
 
   /**
    * Mark all notifications as read
    */
-  markAllAsRead: async (): Promise<{ detail: string; updated_count: number }> => {
-    const response = await api.post('/notifications/mark-all-read/');
+  markAllAsRead: async (): Promise<{ detail: string }> => {
+    const response = await api.patch('/notifications/mark-all-read/');
     return response.data;
   },
 

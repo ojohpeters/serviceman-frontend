@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAdmin } from '../../hooks/useAdmin';
 import { useSkills } from '../../hooks/useAPI';
@@ -23,11 +23,12 @@ export default function AdminSkillsPage() {
   const [formLoading, setFormLoading] = useState(false);
   const [formError, setFormError] = useState('');
 
-  // Redirect if not admin
-  if (!adminLoading && !isAdmin) {
-    router.push('/admin/login');
-    return null;
-  }
+  // Redirect if not admin (use useEffect to avoid setState during render)
+  useEffect(() => {
+    if (!adminLoading && !isAdmin) {
+      router.push('/admin/login');
+    }
+  }, [adminLoading, isAdmin, router]);
 
   if (adminLoading) {
     return (

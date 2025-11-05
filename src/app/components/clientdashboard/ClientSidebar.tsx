@@ -2,8 +2,8 @@
 import React from "react";
 import NairaIcon from "../NairaIcon";
 import { useUser } from "../../contexts/UserContext";
-import { useNotifications } from "../../hooks/useAPI";
-import { Home, Briefcase, MessageCircle, Settings, Bell } from "lucide-react";
+import { useNotifications } from "../../contexts/NotificationContext";
+import { Home, Briefcase, Bell, User } from "lucide-react";
 
 export default function ClientSidebar(): React.ReactElement {
   const { user, loading } = useUser();
@@ -61,11 +61,11 @@ export default function ClientSidebar(): React.ReactElement {
           <a href="/dashboard/client" className="list-group-item list-group-item-action active d-flex align-items-center">
             <Home className="me-2" /> Dashboard
           </a>
-          <a href="#" className="list-group-item list-group-item-action d-flex align-items-center">
+          <a href="/dashboard/client" className="list-group-item list-group-item-action d-flex align-items-center">
             <Briefcase className="me-2" /> Service Requests
           </a>
-          <a href="#" className="list-group-item list-group-item-action d-flex align-items-center">
-            <NairaIcon size={24} color="#3454fa" /> Payment History
+          <a href="/categories" className="list-group-item list-group-item-action d-flex align-items-center">
+            <NairaIcon size={24} color="#3454fa" /> Book Service
           </a>
           <a href="/notifications" className="list-group-item list-group-item-action d-flex align-items-center position-relative">
             <Bell className="me-2" /> Notifications
@@ -75,11 +75,11 @@ export default function ClientSidebar(): React.ReactElement {
               </span>
             )}
           </a>
-          <a href="#" className="list-group-item list-group-item-action d-flex align-items-center">
-            <MessageCircle className="me-2" /> Messages
+          <a href="/servicemen" className="list-group-item list-group-item-action d-flex align-items-center">
+            <Briefcase className="me-2" /> Find Servicemen
           </a>
-          <a href="#" className="list-group-item list-group-item-action d-flex align-items-center">
-            <Settings className="me-2" /> Settings
+          <a href="/profile" className="list-group-item list-group-item-action d-flex align-items-center">
+            <User className="me-2" /> Profile
           </a>
         </div>
       </div>

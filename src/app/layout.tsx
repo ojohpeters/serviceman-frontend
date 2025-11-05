@@ -5,6 +5,9 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from './contexts/AuthContext';
 import { UserProvider } from './contexts/UserContext';
+import { LoadingProvider } from './contexts/LoadingContext';
+import { NotificationProvider } from './contexts/NotificationContext';
+import TopLoadingBar from './components/common/TopLoadingBar';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -46,7 +49,12 @@ export default function RootLayout({
       <body className="antialiased" suppressHydrationWarning>
         <AuthProvider>
           <UserProvider>
-            {children}
+            <NotificationProvider refreshInterval={60000}>
+              <LoadingProvider>
+                <TopLoadingBar />
+                {children}
+              </LoadingProvider>
+            </NotificationProvider>
           </UserProvider>
         </AuthProvider>
       </body>

@@ -1,6 +1,6 @@
 'use client';
 
-import React from "react";
+import React, { useMemo, useState } from "react";
 import Nav from "../../components/common/Nav";
 import SecondFooter from "../../components/common/SecondFooter";
 import WorkerSidebar from "../../components/workerdashboard/WorkerSidebar";
@@ -13,12 +13,15 @@ import ServicemanProfileCompletion from "../../components/workerdashboard/Servic
 import { useAuth } from "../../contexts/AuthContext";
 import { useUser } from "../../contexts/UserContext";
 import ProtectedRoute from "../../components/ProtectedRoute";
-import { useServiceRequests, useNotifications } from "../../hooks/useAPI";
+import { useServiceRequests } from "../../hooks/useAPI";
+import { useNotifications } from "../../contexts/NotificationContext";
 import type { ServiceRequest } from "../../types/api";
+import Link from "next/link";
 
 export default function WorkerDashboardPage(): React.ReactElement {
   const { isAuthenticated, loading: authLoading, logout } = useAuth();
   const { user, servicemanProfile, loading: userLoading } = useUser();
+  const [isAvailable, setIsAvailable] = useState(servicemanProfile?.is_available || false);
   
   // Use hooks for service requests and notifications
   const { 
@@ -28,9 +31,55 @@ export default function WorkerDashboardPage(): React.ReactElement {
     refetch 
   } = useServiceRequests(true);
   
-  const { 
+  const {
+    notifications,
     unreadCount 
-  } = useNotifications();
+  } = useNotifications(); // Now uses global context - no more individual polling!
+
+  // Calculate earnings and performance metrics
+  const metrics = useMemo(() => {
+    if (!serviceRequests || !Array.isArray(serviceRequests)) {
+      return {
+        totalJobs: 0,
+        activeJobs: 0,
+        completedJobs: 0,
+        pendingReview: 0,
+        estimatedEarnings: 0,
+        completionRate: 0
+      };
+    }
+
+    // Filter only jobs assigned to this serviceman
+    const myJobs = serviceRequests.filter(req => 
+      req.serviceman && (typeof req.serviceman === 'object' ? req.serviceman.id === user?.id : req.serviceman === user?.id)
+    );
+
+    const totalJobs = myJobs.length;
+    const activeJobs = myJobs.filter(req => 
+      req.status === 'IN_PROGRESS' || req.status === 'ASSIGNED_TO_SERVICEMAN'
+    ).length;
+    const completedJobs = myJobs.filter(req => req.status === 'COMPLETED').length;
+    const pendingReview = myJobs.filter(req => 
+      req.status === 'PENDING_ADMIN_ASSIGNMENT' || req.status === 'AWAITING_ASSIGNMENT'
+    ).length;
+
+    // Calculate estimated earnings from completed and ongoing jobs
+    const estimatedEarnings = myJobs.reduce((sum, req) => {
+      if (req.status === 'COMPLETED' || req.status === 'IN_PROGRESS') {
+        return sum + (req.cost_estimate || req.initial_booking_fee || 0);
+      }
+      return sum;
+    }, 0);
+
+    const completionRate = totalJobs > 0 ? Math.round((completedJobs / totalJobs) * 100) : 0;
+
+    return { totalJobs, activeJobs, completedJobs, pendingReview, estimatedEarnings, completionRate };
+  }, [serviceRequests, user]);
+
+  // Update availability status
+  React.useEffect(() => {
+    setIsAvailable(servicemanProfile?.is_available || false);
+  }, [servicemanProfile]);
 
   const isLoading = authLoading || userLoading;
 
@@ -94,17 +143,77 @@ export default function WorkerDashboardPage(): React.ReactElement {
             {/* Main dashboard content */}
             <section
               className="flex-grow-1 d-flex flex-column justify-content-start align-items-stretch p-4 position-relative"
-              style={{ minHeight: "calc(100vh - 80px)" }}
+              style={{ minHeight: "calc(100vh - 80px)", overflowY: "auto" }}
             >
               <div className="position-relative z-2">
-                <DashboardHeader />
+                {/* Dashboard Header with Quick Actions */}
+                <div className="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4 gap-3">
+                  <DashboardHeader />
+                  <div className="d-flex gap-2 align-items-center">
+                    <button
+                      onClick={refetch}
+                      className="btn btn-outline-secondary btn-sm"
+                      title="Refresh data"
+                      disabled={dataLoading}
+                    >
+                      <i className={`bi bi-arrow-clockwise ${dataLoading ? 'spinning' : ''}`}></i>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Professional Welcome Card */}
+                <div className="card border-0 shadow-sm mb-4" style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: 'white' }}>
+                  <div className="card-body p-4">
+                    <div className="row align-items-center">
+                      <div className="col-md-6">
+                        <h4 className="mb-2 fw-bold">Welcome, {user?.username}! 👷</h4>
+                        <p className="mb-0 opacity-75">
+                          {servicemanProfile?.is_approved 
+                            ? "Ready to take on new jobs today!" 
+                            : "Your application is pending approval"}
+                        </p>
+                      </div>
+                      <div className="col-md-6 mt-3 mt-md-0">
+                        <div className="d-flex flex-column gap-2">
+                          {/* Availability Toggle */}
+                          <div className="d-flex align-items-center justify-content-md-end gap-3">
+                            <span className="small">Status:</span>
+                            <div className="form-check form-switch mb-0">
+                              <input
+                                className="form-check-input"
+                                type="checkbox"
+                                role="switch"
+                                id="availabilitySwitch"
+                                checked={isAvailable}
+                                onChange={(e) => setIsAvailable(e.target.checked)}
+                                style={{ width: '3em', height: '1.5em', cursor: 'pointer' }}
+                              />
+                              <label className="form-check-label ms-2 fw-semibold" htmlFor="availabilitySwitch">
+                                {isAvailable ? '🟢 Available' : '🔴 Unavailable'}
+                              </label>
+                            </div>
+                          </div>
+                          {unreadCount > 0 && (
+                            <Link href="/notifications" className="btn btn-light btn-sm ms-auto">
+                              <i className="bi bi-bell-fill me-1"></i>
+                              {unreadCount} New
+                            </Link>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
 
                 {/* Approval Status Alert */}
                 {servicemanProfile && !servicemanProfile.is_approved && (
                   <div className="alert alert-warning border-0 shadow-sm d-flex align-items-center mb-4" role="alert">
-                    <i className="bi bi-clock-history fs-4 me-3"></i>
+                    <div className="bg-warning bg-opacity-20 rounded-circle d-flex align-items-center justify-content-center me-3" 
+                         style={{ width: '48px', height: '48px' }}>
+                      <i className="bi bi-clock-history fs-4 text-warning"></i>
+                    </div>
                     <div className="flex-grow-1">
-                      <h6 className="alert-heading mb-1">Application Pending Approval</h6>
+                      <h6 className="alert-heading mb-1 fw-bold">Application Pending Approval</h6>
                       <p className="mb-0">
                         Your serviceman application is awaiting admin approval. You'll be notified once approved.
                       </p>
@@ -113,83 +222,253 @@ export default function WorkerDashboardPage(): React.ReactElement {
                 )}
 
                 {error && (
-                  <div className="alert alert-danger d-flex align-items-center" role="alert">
-                    <i className="bi bi-exclamation-triangle me-2"></i>
-                    {error}
+                  <div className="alert alert-danger border-0 shadow-sm d-flex align-items-center mb-4" role="alert">
+                    <i className="bi bi-exclamation-triangle fs-4 me-3"></i>
+                    <div className="flex-grow-1">{error}</div>
+                    <button onClick={refetch} className="btn btn-sm btn-outline-danger">
+                      <i className="bi bi-arrow-clockwise me-1"></i>
+                      Retry
+                    </button>
                   </div>
                 )}
 
                 {/* Profile Completion */}
                 <ServicemanProfileCompletion profile={servicemanProfile} />
-                
-                <WorkerStats 
-                  serviceRequests={serviceRequests}
-                  servicemanProfile={servicemanProfile}
-                />
 
+                {/* Enhanced Performance Metrics */}
+                <div className="row g-3 mb-4">
+                  <div className="col-6 col-md-4 col-xl-2">
+                    <div className="card border-0 shadow-sm h-100">
+                      <div className="card-body p-3">
+                        <div className="d-flex align-items-center gap-2">
+                          <div className="bg-primary bg-opacity-10 rounded-circle p-2">
+                            <i className="bi bi-briefcase-fill text-primary"></i>
+                          </div>
+                          <div>
+                            <div className="fs-4 fw-bold">{metrics.totalJobs}</div>
+                            <small className="text-muted">Total Jobs</small>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="col-6 col-md-4 col-xl-2">
+                    <div className="card border-0 shadow-sm h-100">
+                      <div className="card-body p-3">
+                        <div className="d-flex align-items-center gap-2">
+                          <div className="bg-info bg-opacity-10 rounded-circle p-2">
+                            <i className="bi bi-gear-fill text-info"></i>
+                          </div>
+                          <div>
+                            <div className="fs-4 fw-bold">{metrics.activeJobs}</div>
+                            <small className="text-muted">Active</small>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="col-6 col-md-4 col-xl-2">
+                    <div className="card border-0 shadow-sm h-100">
+                      <div className="card-body p-3">
+                        <div className="d-flex align-items-center gap-2">
+                          <div className="bg-success bg-opacity-10 rounded-circle p-2">
+                            <i className="bi bi-check-circle-fill text-success"></i>
+                          </div>
+                          <div>
+                            <div className="fs-4 fw-bold">{metrics.completedJobs}</div>
+                            <small className="text-muted">Completed</small>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="col-6 col-md-4 col-xl-2">
+                    <div className="card border-0 shadow-sm h-100">
+                      <div className="card-body p-3">
+                        <div className="d-flex align-items-center gap-2">
+                          <div className="bg-warning bg-opacity-10 rounded-circle p-2">
+                            <i className="bi bi-hourglass-split text-warning"></i>
+                          </div>
+                          <div>
+                            <div className="fs-4 fw-bold">{metrics.pendingReview}</div>
+                            <small className="text-muted">Pending</small>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="col-6 col-md-4 col-xl-2">
+                    <div className="card border-0 shadow-sm h-100 bg-success text-white">
+                      <div className="card-body p-3">
+                        <div className="d-flex align-items-center gap-2">
+                          <div className="bg-white bg-opacity-20 rounded-circle p-2">
+                            <i className="bi bi-currency-dollar"></i>
+                          </div>
+                          <div>
+                            <div className="fs-5 fw-bold">₦{metrics.estimatedEarnings.toLocaleString()}</div>
+                            <small>Earnings</small>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="col-6 col-md-4 col-xl-2">
+                    <div className="card border-0 shadow-sm h-100">
+                      <div className="card-body p-3">
+                        <div className="d-flex align-items-center gap-2">
+                          <div className="bg-primary bg-opacity-10 rounded-circle p-2">
+                            <i className="bi bi-graph-up text-primary"></i>
+                          </div>
+                          <div>
+                            <div className="fs-4 fw-bold">{metrics.completionRate}%</div>
+                            <small className="text-muted">Success</small>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Rating and Profile Summary */}
+                {servicemanProfile && (
+                  <div className="card border-0 shadow-sm mb-4">
+                    <div className="card-body p-4">
+                      <div className="row align-items-center">
+                        <div className="col-md-3 text-center mb-3 mb-md-0">
+                          <div className="bg-warning bg-opacity-10 rounded-circle d-inline-flex p-4 mb-2">
+                            <i className="bi bi-star-fill text-warning display-4"></i>
+                          </div>
+                          <div className="fs-2 fw-bold">{servicemanProfile.rating || 'N/A'}</div>
+                          <div className="text-muted small">Your Rating</div>
+                        </div>
+                        <div className="col-md-9">
+                          <div className="row g-4">
+                            <div className="col-6 col-sm-3">
+                              <div className="text-center">
+                                <div className="fs-5 fw-bold text-primary">{servicemanProfile.total_jobs_completed}</div>
+                                <small className="text-muted">Jobs Done</small>
+                              </div>
+                            </div>
+                            <div className="col-6 col-sm-3">
+                              <div className="text-center">
+                                <div className="fs-5 fw-bold text-info">{servicemanProfile.years_of_experience || 0}</div>
+                                <small className="text-muted">Years Exp.</small>
+                              </div>
+                            </div>
+                            <div className="col-6 col-sm-3">
+                              <div className="text-center">
+                                <div className="fs-5 fw-bold text-success">{servicemanProfile.active_jobs_count}</div>
+                                <small className="text-muted">Active Now</small>
+                              </div>
+                            </div>
+                            <div className="col-6 col-sm-3">
+                              <div className="text-center">
+                                <span className={`badge ${isAvailable ? 'bg-success' : 'bg-secondary'} fs-6 px-3 py-2`}>
+                                  {isAvailable ? 'Available' : 'Busy'}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Recent Notifications */}
+                {notifications && notifications.length > 0 && (
+                  <div className="card border-0 shadow-sm mb-4">
+                    <div className="card-header bg-white border-0 d-flex justify-content-between align-items-center">
+                      <h6 className="mb-0 fw-semibold">
+                        <i className="bi bi-bell text-primary me-2"></i>
+                        Recent Notifications
+                      </h6>
+                      <Link href="/notifications" className="btn btn-sm btn-outline-primary">
+                        View All
+                      </Link>
+                    </div>
+                    <div className="card-body p-0">
+                      <div className="list-group list-group-flush">
+                        {notifications.slice(0, 3).map((notif: any) => (
+                          <div key={notif.id} className="list-group-item">
+                            <div className="d-flex align-items-start gap-3">
+                              <div className={`bg-${notif.is_read ? 'secondary' : 'primary'} bg-opacity-10 rounded-circle p-2`}>
+                                <i className={`bi bi-bell${notif.is_read ? '' : '-fill'} text-${notif.is_read ? 'secondary' : 'primary'}`}></i>
+                              </div>
+                              <div className="flex-grow-1">
+                                <div className="fw-semibold">{notif.title}</div>
+                                <div className="small text-muted">{notif.message}</div>
+                                <small className="text-muted">
+                                  <i className="bi bi-clock me-1"></i>
+                                  {new Date(notif.created_at).toLocaleDateString()}
+                                </small>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Pending Estimation Tasks - Action Required */}
+                {(() => {
+                  const pendingEstimation = serviceRequests?.filter(req => 
+                    req.status === 'PENDING_ESTIMATION' && 
+                    req.serviceman && 
+                    (typeof req.serviceman === 'object' ? req.serviceman.id === user?.id : req.serviceman === user?.id)
+                  ) || [];
+
+                  if (pendingEstimation.length > 0) {
+                    return (
+                      <div className="alert alert-warning border-0 shadow-sm mb-4" role="alert">
+                        <div className="d-flex align-items-start gap-3">
+                          <div className="bg-warning bg-opacity-20 rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" 
+                               style={{ width: '48px', height: '48px' }}>
+                            <i className="bi bi-exclamation-triangle fs-4 text-warning"></i>
+                          </div>
+                          <div className="flex-grow-1">
+                            <h6 className="alert-heading mb-2 fw-bold">
+                              <i className="bi bi-clipboard-check me-2"></i>
+                              Action Required: Pending Estimations
+                            </h6>
+                            <p className="mb-3">
+                              You have <strong>{pendingEstimation.length}</strong> service request{pendingEstimation.length !== 1 ? 's' : ''} waiting for your cost estimate. 
+                              Clients are expecting your professional assessment.
+                            </p>
+                            <div className="d-flex flex-wrap gap-2">
+                              {pendingEstimation.slice(0, 3).map((req) => (
+                                <Link
+                                  key={req.id}
+                                  href={`/service-requests/${req.id}`}
+                                  className="btn btn-warning btn-sm"
+                                >
+                                  <i className="bi bi-calculator me-1"></i>
+                                  Request #{req.id}
+                                </Link>
+                              ))}
+                              {pendingEstimation.length > 3 && (
+                                <span className="badge bg-dark align-self-center">
+                                  +{pendingEstimation.length - 3} more
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  }
+                  return null;
+                })()}
+
+                {/* Job Requests */}
                 <JobRequests 
                   serviceRequests={serviceRequests}
                   loading={dataLoading}
                 />
 
+                {/* Job History */}
                 <JobHistory className="mt-4" />
-
-                <div className="row">
-                  <div className="col-12">
-                    <ServicemanProfileEdit />
-                  </div>
-                </div>
-
-                {/* Notifications */}
-                {unreadCount > 0 && (
-                  <div className="alert alert-info border-0 shadow-sm d-flex align-items-center mb-4">
-                    <i className="bi bi-bell-fill fs-4 me-3"></i>
-                    <div className="flex-grow-1">
-                      <strong>You have {unreadCount} unread notification{unreadCount !== 1 ? 's' : ''}</strong>
-                    </div>
-                    <a href="/notifications" className="btn btn-info btn-sm">
-                      View All
-                    </a>
-                  </div>
-                )}
-
-                {/* Quick Actions */}
-                <div 
-                  className="card border-0 shadow-sm mb-4"
-                  style={{
-                    background: 'rgba(255,255,255,0.9)',
-                    backdropFilter: 'blur(10px)'
-                  }}
-                >
-                  <div className="card-body p-4">
-                    <h5 className="fw-semibold text-gray-800 mb-3">
-                      Quick Actions
-                    </h5>
-                    <div className="d-flex gap-3 mt-3 flex-wrap">
-                      <button
-                        onClick={refetch}
-                        className="btn btn-outline-primary rounded-pill px-4 fw-semibold hover-lift"
-                      >
-                        <i className="bi bi-arrow-clockwise me-2"></i>
-                        Refresh Jobs
-                      </button>
-                      <a 
-                        href="/categories"
-                        className="btn btn-outline-secondary rounded-pill px-4 fw-semibold hover-lift"
-                      >
-                        <i className="bi bi-grid me-2"></i>
-                        Browse Categories
-                      </a>
-                      <button
-                        onClick={logout}
-                        className="btn btn-outline-danger rounded-pill px-4 fw-semibold hover-lift"
-                      >
-                        <i className="bi bi-box-arrow-right me-2"></i>
-                        Logout
-                      </button>
-                    </div>
-                  </div>
-                </div>
               </div>
             </section>
           </main>
@@ -208,7 +487,16 @@ export default function WorkerDashboardPage(): React.ReactElement {
           </div>
         </div>
 
-        {/* ... your existing styles ... */}
+        {/* Custom styles */}
+        <style jsx>{`
+          .spinning {
+            animation: spin 1s linear infinite;
+          }
+          @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+          }
+        `}</style>
       </div>
     </ProtectedRoute>
   );

@@ -177,9 +177,11 @@ export default function ServicemenListPage() {
                   <div className="card border-0 shadow-sm h-100">
                     <div className="card-body">
                       <div className="d-flex justify-content-between align-items-start mb-3">
-                        <div>
-                          <h5 className="mb-1">
-                            {typeof serviceman.user === 'object' ? serviceman.user.username : `User #${serviceman.user}`}
+                        <div className="flex-grow-1" style={{ minWidth: 0 }}>
+                          <h5 className="mb-1 text-truncate">
+                            {typeof serviceman.user === 'object' 
+                              ? serviceman.user.full_name || serviceman.user.username 
+                              : `Serviceman #${serviceman.user}`}
                           </h5>
                           {serviceman.category && (
                             <small className="text-muted">
@@ -187,7 +189,7 @@ export default function ServicemenListPage() {
                             </small>
                           )}
                         </div>
-                        <span className={`badge ${serviceman.is_available ? 'bg-success' : 'bg-secondary'}`}>
+                        <span className={`badge ${serviceman.is_available ? 'bg-success' : 'bg-secondary'} flex-shrink-0 ms-2`}>
                           {serviceman.availability_status?.label || (serviceman.is_available ? 'Available' : 'Busy')}
                         </span>
                       </div>

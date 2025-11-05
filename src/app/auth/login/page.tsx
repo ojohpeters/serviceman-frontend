@@ -22,6 +22,20 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [loginSuccess, setLoginSuccess] = useState(false);
 
+  // Redirect already logged-in users to their dashboard
+  useEffect(() => {
+    // Only redirect if we're sure user is logged in (not during loading)
+    if (!userLoading && user && user.id !== 0) {
+      console.log('🔄 [Login] User already logged in, redirecting to dashboard');
+      const dashboardUrl = user.user_type === 'ADMIN' 
+        ? '/admin/dashboard' 
+        : user.user_type === 'SERVICEMAN'
+        ? '/dashboard/worker'
+        : '/dashboard/client';
+      router.push(dashboardUrl);
+    }
+  }, [user, userLoading, router]);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -55,7 +69,30 @@ export default function LoginPage() {
 // After loginSuccess is true, wait for user to be ready before redirect
 useEffect(() => {
   if (loginSuccess && user && !userLoading) {
-    router.push("/");
+    // Check if there's a saved redirect path
+    const savedRedirect = typeof window !== 'undefined' 
+      ? sessionStorage.getItem('redirectAfterLogin') 
+      : null;
+    
+    let redirectTo: string;
+    
+    if (savedRedirect && savedRedirect !== '/auth/login') {
+      // Redirect back to where they were trying to go
+      console.log('🎯 [Login] Redirecting back to saved path:', savedRedirect);
+      redirectTo = savedRedirect;
+      sessionStorage.removeItem('redirectAfterLogin'); // Clean up
+    } else {
+      // Redirect based on user type to their appropriate dashboard
+      redirectTo = user.user_type === 'ADMIN' 
+        ? '/admin/dashboard' 
+        : user.user_type === 'SERVICEMAN'
+        ? '/dashboard/worker'
+        : '/dashboard/client';
+      
+      console.log('🎯 [Login] Redirecting to default dashboard:', redirectTo);
+    }
+    
+    router.push(redirectTo);
   }
 }, [loginSuccess, user, userLoading, router]);
 

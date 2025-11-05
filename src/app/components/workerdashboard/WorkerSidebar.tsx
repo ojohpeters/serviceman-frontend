@@ -2,15 +2,14 @@
 import React from "react";
 import NairaIcon from "../NairaIcon";
 import { useUser } from "../../contexts/UserContext";
-import { useNotifications } from "../../hooks/useAPI";
+import { useNotifications } from "../../contexts/NotificationContext";
 
 import {
   Home,
   Briefcase,
   Calendar,
-  MessageCircle,
-  Settings,
   Bell,
+  User,
 } from "lucide-react";
 
 export default function WorkerSidebar(): React.ReactElement {
@@ -106,16 +105,10 @@ export default function WorkerSidebar(): React.ReactElement {
             )}
           </a>
           <a
-            href="#"
+            href="/profile"
             className="list-group-item list-group-item-action d-flex align-items-center"
           >
-            <MessageCircle className="me-2" /> Messages
-          </a>
-          <a
-            href="#"
-            className="list-group-item list-group-item-action d-flex align-items-center"
-          >
-            <Settings className="me-2" /> Settings
+            <User className="me-2" /> Profile
           </a>
         </div>
       </div>

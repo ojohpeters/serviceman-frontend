@@ -4,7 +4,7 @@ import React, { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../contexts/AuthContext';
 import { useUser } from '../contexts/UserContext';
-import { useNotifications } from '../hooks/useAPI';
+import { useNotifications } from '../contexts/NotificationContext';
 import Nav from '../components/common/Nav';
 import SecondFooter from '../components/common/SecondFooter';
 import ProtectedRoute from '../components/ProtectedRoute';

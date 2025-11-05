@@ -81,14 +81,13 @@ export default function ServiceRequestsList({ serviceRequests = [] }: ServiceReq
                               <i className="bi bi-tools fs-5 text-primary"></i>
                             </div>
                           </div>
-                          <div className="flex-grow-1">
+                          <div className="flex-grow-1 overflow-hidden">
                             <h6 className="mb-1 fw-semibold text-truncate" title={request.service_description}>
                               {request.service_description || 'No description'}
                             </h6>
-                            <div className="small text-muted">
+                            <div className="small text-muted text-truncate">
                               <i className="bi bi-geo-alt me-1"></i>
-                              <span className="text-truncate d-inline-block" style={{ maxWidth: '200px' }} 
-                                    title={request.client_address}>
+                              <span title={request.client_address}>
                                 {request.client_address || 'No address'}
                               </span>
                             </div>
