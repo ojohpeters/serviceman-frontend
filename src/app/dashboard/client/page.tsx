@@ -154,7 +154,7 @@ export default function ClientDashboardPage(): React.ReactElement {
               <div className="position-relative z-2">
                 {/* Dashboard Header with Refresh Button */}
                 <div className="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4 gap-3">
-                  <DashboardHeader />
+                <DashboardHeader />
                   <div className="d-flex gap-2">
                     <Link 
                       href="/categories"
@@ -363,15 +363,15 @@ export default function ClientDashboardPage(): React.ReactElement {
                               >
                                 Active ({stats.ongoingJobs})
                               </button>
-                              <button 
+                          <button
                                 className={`btn btn-sm ${statusFilter === 'COMPLETED' ? 'btn-success' : 'btn-outline-secondary'}`}
                                 onClick={() => setStatusFilter('COMPLETED')}
-                              >
+                          >
                                 Completed ({stats.completedJobs})
-                              </button>
-                            </div>
-                          </div>
+                          </button>
                         </div>
+                      </div>
+                    </div>
                       </div>
                     </div>
 

@@ -705,18 +705,57 @@ export default function ServicemanPublicProfilePage({ params }: PageProps) {
                             type="date"
                             className="form-control form-control-lg"
                             value={bookingDetails.booking_date}
-                            onChange={(e) =>
+                            onChange={(e) => {
+                              const selectedDate = e.target.value;
+                              const today = new Date();
+                              today.setHours(0, 0, 0, 0);
+                              
+                              const bookingDate = new Date(selectedDate);
+                              bookingDate.setHours(0, 0, 0, 0);
+                              
+                              // Calculate days difference
+                              const diffTime = bookingDate.getTime() - today.getTime();
+                              const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                              
+                              // Auto-flag as emergency if less than 2 days
+                              const isEmergency = diffDays < 2;
+                              
+                              console.log('📅 [Date Change] Selected date:', selectedDate);
+                              console.log('📅 [Date Change] Days from today:', diffDays);
+                              console.log('📅 [Date Change] Auto-flagged emergency:', isEmergency);
+                              
                               setBookingDetails({
                                 ...bookingDetails,
-                                booking_date: e.target.value,
-                              })
-                            }
+                                booking_date: selectedDate,
+                                is_emergency: isEmergency,
+                              });
+                            }}
                             required
                             min={new Date().toISOString().split('T')[0]}
                           />
                           <div className="form-text mt-2">
                             <i className="bi bi-info-circle text-primary me-1"></i>
-                            <span className="small">Select the date when you need the service. Bookings within 2 days are marked as emergency.</span>
+                            <span className="small">
+                              Select the date when you need the service. 
+                              {bookingDetails.booking_date && (() => {
+                                const today = new Date();
+                                today.setHours(0, 0, 0, 0);
+                                const bookingDate = new Date(bookingDetails.booking_date);
+                                bookingDate.setHours(0, 0, 0, 0);
+                                const diffTime = bookingDate.getTime() - today.getTime();
+                                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                                
+                                if (diffDays < 2) {
+                                  return (
+                                    <strong className="text-warning d-block mt-1">
+                                      <i className="bi bi-lightning-charge-fill me-1"></i>
+                                      Auto-flagged as emergency (less than 2 days away) - ₦5,000 booking fee
+                                    </strong>
+                                  );
+                                }
+                                return null;
+                              })()}
+                            </span>
                           </div>
                         </div>
                       </div>
@@ -795,23 +834,40 @@ export default function ServicemanPublicProfilePage({ params }: PageProps) {
 
                       {/* Emergency Service Toggle */}
                       <div className="col-12">
-                        <div className={`card border-2 ${bookingDetails.is_emergency ? 'border-warning bg-warning bg-opacity-10' : 'border-success bg-success bg-opacity-10'}`}>
-                          <div className="card-body">
-                            <div className="form-check form-switch">
-                              <input
-                                className="form-check-input"
-                                type="checkbox"
-                                role="switch"
-                                id="emergency"
-                                style={{ width: '3em', height: '1.5em', cursor: 'pointer' }}
-                                checked={bookingDetails.is_emergency}
-                                onChange={(e) =>
-                                  setBookingDetails({
-                                    ...bookingDetails,
-                                    is_emergency: e.target.checked,
-                                  })
-                                }
-                              />
+                        {(() => {
+                          // Check if auto-flagged due to date
+                          let isAutoFlagged = false;
+                          if (bookingDetails.booking_date) {
+                            const today = new Date();
+                            today.setHours(0, 0, 0, 0);
+                            const bookingDate = new Date(bookingDetails.booking_date);
+                            bookingDate.setHours(0, 0, 0, 0);
+                            const diffTime = bookingDate.getTime() - today.getTime();
+                            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                            isAutoFlagged = diffDays < 2;
+                          }
+                          
+                          return (
+                            <div className={`card border-2 ${bookingDetails.is_emergency ? 'border-warning bg-warning bg-opacity-10' : 'border-success bg-success bg-opacity-10'}`}>
+                              <div className="card-body">
+                                <div className="form-check form-switch">
+                                  <input
+                                    className="form-check-input"
+                                    type="checkbox"
+                                    role="switch"
+                                    id="emergency"
+                                    style={{ width: '3em', height: '1.5em', cursor: isAutoFlagged ? 'not-allowed' : 'pointer' }}
+                                    checked={bookingDetails.is_emergency}
+                                    disabled={isAutoFlagged}
+                                    onChange={(e) => {
+                                      if (!isAutoFlagged) {
+                                        setBookingDetails({
+                                          ...bookingDetails,
+                                          is_emergency: e.target.checked,
+                                        });
+                                      }
+                                    }}
+                                  />
                               <label
                                 className="form-check-label fw-semibold"
                                 htmlFor="emergency"
@@ -821,31 +877,39 @@ export default function ServicemanPublicProfilePage({ params }: PageProps) {
                                 {bookingDetails.is_emergency ? 'Emergency Service' : 'Standard Service'}
                               </label>
                             </div>
-                            <div className="mt-2 ps-5">
-                              {bookingDetails.is_emergency ? (
-                                <div>
-                                  <div className="fw-bold text-warning mb-1">
-                                    <i className="bi bi-exclamation-triangle-fill me-1"></i>
-                                    Initial Booking Fee: ₦5,000
-                                  </div>
-                                  <small className="text-dark">
-                                    Priority service with faster response time. The serviceman will prioritize your request.
-                                  </small>
+                                <div className="mt-2 ps-5">
+                                  {bookingDetails.is_emergency ? (
+                                    <div>
+                                      <div className="fw-bold text-warning mb-1">
+                                        <i className="bi bi-exclamation-triangle-fill me-1"></i>
+                                        Initial Booking Fee: ₦5,000
+                                      </div>
+                                      <small className="text-dark">
+                                        Priority service with faster response time. The serviceman will prioritize your request.
+                                        {isAutoFlagged && (
+                                          <span className="d-block mt-1 text-warning">
+                                            <i className="bi bi-info-circle-fill me-1"></i>
+                                            <strong>Auto-flagged:</strong> Bookings within 2 days require emergency fee for priority service.
+                                          </span>
+                                        )}
+                                      </small>
+                                    </div>
+                                  ) : (
+                                    <div>
+                                      <div className="fw-bold text-success mb-1">
+                                        <i className="bi bi-check-circle-fill me-1"></i>
+                                        Initial Booking Fee: ₦2,000
+                                      </div>
+                                      <small className="text-dark">
+                                        Standard service booking. The serviceman will respond within normal timeframes.
+                                      </small>
+                                    </div>
+                                  )}
                                 </div>
-                              ) : (
-                                <div>
-                                  <div className="fw-bold text-success mb-1">
-                                    <i className="bi bi-check-circle-fill me-1"></i>
-                                    Initial Booking Fee: ₦2,000
-                                  </div>
-                                  <small className="text-dark">
-                                    Standard service booking. The serviceman will respond within normal timeframes.
-                                  </small>
-                                </div>
-                              )}
+                              </div>
                             </div>
-                          </div>
-                        </div>
+                          );
+                        })()}
                       </div>
 
                       {/* Important Notice */}

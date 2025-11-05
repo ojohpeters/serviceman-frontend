@@ -8,7 +8,6 @@ import notificationsService from '../../services/notifications';
 import { adminService } from '../../services/admin';
 import { useAuth } from '../../contexts/AuthContext';
 import { useUser } from '../../contexts/UserContext';
-import { useNotifications } from '../../contexts/NotificationContext';
 import { getStatusConfig, getProgressPercent, requiresPayment, requiresReview, canCancelRequest } from '../../utils/statusHelpers';
 import Nav from '../../components/common/Nav';
 import SecondFooter from '../../components/common/SecondFooter';
@@ -44,9 +43,6 @@ export default function ServiceRequestDetailPage() {
   const [assignmentNotes, setAssignmentNotes] = useState('');
 
   const requestId = params.id as string;
-  
-  // Fetch notifications for this service request - now uses global context
-  const { notifications, markAsRead } = useNotifications();
 
   useEffect(() => {
     const fetchServiceRequest = async () => {
@@ -729,58 +725,10 @@ export default function ServiceRequestDetailPage() {
                 </div>
               </div>
 
-              {/* Messaging Section - Placeholder */}
-              <div className="card shadow-sm">
-                <div className="card-header">
-                  <h5 className="mb-0">
-                    <i className="bi bi-chat-dots me-2"></i>
-                    Communication
-                  </h5>
-                </div>
-                <div className="card-body text-center py-5">
-                  <i className="bi bi-chat-square-text display-4 text-muted mb-3"></i>
-                  <h5 className="text-muted">Messaging Feature</h5>
-                  <p className="text-muted">
-                    Direct messaging between client and serviceman will be available soon.
-                  </p>
-                </div>
-              </div>
             </div>
 
             {/* Right Column - Actions & Info */}
             <div className="col-12 col-lg-4">
-              {/* Notifications Card */}
-              <div className="card shadow-sm mb-4">
-                <div className="card-header">
-                  <h5 className="mb-0">
-                    <i className="bi bi-bell me-2"></i>
-                    Recent Notifications
-                  </h5>
-                </div>
-                <div className="card-body">
-                  {!notifications || notifications.length === 0 ? (
-                    <p className="text-muted text-center">No notifications</p>
-                  ) : (
-                    <div className="list-group list-group-flush">
-                      {notifications.slice(0, 5).map((notification) => (
-                        <div 
-                          key={notification.id} 
-                          className={`list-group-item list-group-item-action ${!notification.is_read ? 'bg-light' : ''}`}
-                          onClick={() => markAsRead(notification.id)}
-                        >
-                          <div className="d-flex w-100 justify-content-between">
-                            <h6 className="mb-1">{notification.title}</h6>
-                            <small>{new Date(notification.created_at).toLocaleDateString()}</small>
-                          </div>
-                          <p className="mb-1 small">{notification.message}</p>
-                          {!notification.is_read && <small className="badge bg-primary">New</small>}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-
               {/* Actions Card */}
               <div className="card shadow-sm mb-4">
                 <div className="card-header">
@@ -926,7 +874,26 @@ export default function ServiceRequestDetailPage() {
                       {serviceRequest.status === 'PENDING_ADMIN_ASSIGNMENT' && (
                         <button 
                           className="btn btn-primary btn-lg"
-                          onClick={() => setShowAssignModal(true)}
+                          onClick={() => {
+                            // Reset selections when opening modal
+                            setSelectedServiceman(null);
+                            setSelectedBackupServiceman(null);
+                            setAssignmentNotes('');
+                            
+                            // Debug: Log what API returned for preferred_serviceman
+                            console.log('🔍 [Modal Open] Full service request:', serviceRequest);
+                            console.log('🔍 [Modal Open] Preferred serviceman from API:', serviceRequest.preferred_serviceman);
+                            if (serviceRequest.preferred_serviceman) {
+                              const pref = serviceRequest.preferred_serviceman as any;
+                              console.log('✨ [Modal Open] Preferred serviceman ID:', pref.id);
+                              console.log('✨ [Modal Open] Preferred serviceman user:', pref.user);
+                            } else {
+                              console.log('ℹ️ [Modal Open] No preferred serviceman set for this request');
+                            }
+                            console.log('🔍 [Modal Open] Available servicemen:', availableServicemen);
+                            
+                            setShowAssignModal(true);
+                          }}
                           disabled={actionLoading}
                         >
                           <i className="bi bi-person-plus me-2"></i>
@@ -1126,50 +1093,92 @@ export default function ServiceRequestDetailPage() {
                 </div>
                 <div className="modal-body">
                   {/* Show Client's Preferred Serviceman if exists */}
-                  {serviceRequest?.preferred_serviceman && (
-                    <div className="alert alert-success border-success mb-3">
-                      <h6 className="alert-heading mb-2">
-                        <i className="bi bi-star-fill me-2"></i>
-                        Client's Preferred Serviceman
-                      </h6>
-                      <div className="d-flex align-items-center mb-2">
-                        <div className="flex-grow-1">
-                          <strong>
-                            {typeof serviceRequest.preferred_serviceman === 'object' && serviceRequest.preferred_serviceman.user
-                              ? (typeof serviceRequest.preferred_serviceman.user === 'object'
-                                  ? serviceRequest.preferred_serviceman.user.username
-                                  : `User #${serviceRequest.preferred_serviceman.user}`)
-                              : (typeof serviceRequest.preferred_serviceman === 'object'
-                                  ? serviceRequest.preferred_serviceman.username
-                                  : `User #${serviceRequest.preferred_serviceman}`)}
-                          </strong>
-                          {typeof serviceRequest.preferred_serviceman === 'object' && (
-                            <div className="small text-muted mt-1">
-                              ⭐ {serviceRequest.preferred_serviceman.rating} rating • 
-                              {serviceRequest.preferred_serviceman.total_jobs_completed} jobs completed •
-                              {serviceRequest.preferred_serviceman.is_available ? 
-                                <span className="text-success"> Available</span> : 
-                                <span className="text-warning"> Currently Busy</span>
-                              }
-                            </div>
-                          )}
+                  {serviceRequest?.preferred_serviceman && (() => {
+                    const preferred = serviceRequest.preferred_serviceman as any;
+                    // API returns: preferred_serviceman: { id: 42, user: { full_name: "John Plumber" }, ... }
+                    const preferredUser = preferred.user;
+                    const userName = typeof preferredUser === 'object' 
+                      ? (preferredUser.full_name || preferredUser.username || 'Unknown Serviceman')
+                      : `Serviceman ID: ${preferred.id}`;
+                    
+                    console.log('🎨 [Preferred Display] Rendering preferred serviceman card:', {
+                      preferred,
+                      preferredUser,
+                      userName
+                    });
+                    
+                    return (
+                      <div className="card border-success border-3 mb-4 shadow">
+                        <div className="card-header bg-success bg-opacity-10 border-bottom border-success">
+                          <h5 className="mb-0 text-success">
+                            <i className="bi bi-star-fill me-2"></i>
+                            💡 Client's Preferred Serviceman
+                          </h5>
                         </div>
-                        {typeof serviceRequest.preferred_serviceman === 'object' && serviceRequest.preferred_serviceman.user && (
-                          <button
-                            className="btn btn-sm btn-success"
-                            onClick={() => setSelectedServiceman(typeof serviceRequest.preferred_serviceman.user === 'object' ? serviceRequest.preferred_serviceman.user.id : serviceRequest.preferred_serviceman.user)}
-                          >
-                            <i className="bi bi-check2 me-1"></i>
-                            Use This Serviceman
-                          </button>
-                        )}
+                        <div className="card-body">
+                          <div className="row">
+                            <div className="col-md-8">
+                              <h4 className="mb-3 text-dark">{userName}</h4>
+                              
+                              {preferred.rating && (
+                                <div className="mb-3">
+                                  <div className="d-flex flex-wrap gap-2">
+                                    <span className="badge bg-primary px-3 py-2">
+                                      ⭐ {preferred.rating} rating
+                                    </span>
+                                    <span className="badge bg-info px-3 py-2">
+                                      📊 {preferred.total_jobs_completed || 0} jobs completed
+                                    </span>
+                                    <span className="badge bg-secondary px-3 py-2">
+                                      💼 {preferred.years_of_experience || 0} years experience
+                                    </span>
+                                    <span className={`badge px-3 py-2 ${preferred.is_available ? 'bg-success' : 'bg-warning text-dark'}`}>
+                                      {preferred.is_available ? '✓ Available Now' : '⚠ Currently Busy'}
+                                    </span>
+                                  </div>
+                                </div>
+                              )}
+                              
+                              {preferred.skills && preferred.skills.length > 0 && (
+                                <div className="mb-2">
+                                  <strong className="d-block mb-2">Skills:</strong>
+                                  <div className="d-flex flex-wrap gap-1">
+                                    {preferred.skills.map((s: any, idx: number) => (
+                                      <span key={idx} className="badge bg-light text-dark border">
+                                        {s.name}
+                                      </span>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                              
+                              {preferred.bio && (
+                                <div className="mt-3">
+                                  <strong className="d-block mb-1">About:</strong>
+                                  <p className="small text-muted mb-0">{preferred.bio}</p>
+                                </div>
+                              )}
+                            </div>
+                            
+                            <div className="col-md-4 d-flex flex-column justify-content-center align-items-center border-start">
+                              <div className="text-center">
+                                <div className="bg-success bg-opacity-10 rounded-circle p-4 mb-3 mx-auto" style={{ width: '80px', height: '80px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                  <i className="bi bi-hand-thumbs-up-fill text-success fs-1"></i>
+                                </div>
+                                <h6 className="text-success mb-2">
+                                  <i className="bi bi-info-circle me-1"></i>
+                                  Client's Choice
+                                </h6>
+                                <p className="small text-muted mb-0">
+                                  Look for this serviceman in the list below and select them as primary.
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
                       </div>
-                      <div className="small">
-                        <i className="bi bi-info-circle me-1"></i>
-                        The client selected this serviceman. You can assign them or choose someone else.
-                      </div>
-                    </div>
-                  )}
+                    );
+                  })()}
                   
                   {serviceRequest?.serviceman && (
                     <div className="alert alert-info mb-3">
@@ -1179,10 +1188,27 @@ export default function ServiceRequestDetailPage() {
                     </div>
                   )}
                   
-                  <h6 className="mb-3">
+                  <h6 className="mb-2">
                     <i className="bi bi-person-check me-2"></i>
                     Primary Serviceman (Required)
                   </h6>
+                  {selectedServiceman && (
+                    <div className="alert alert-primary small mb-3">
+                      <i className="bi bi-check-circle-fill me-2"></i>
+                      <strong>Selected:</strong> {(() => {
+                        const selected = availableServicemen.find((s: any) => {
+                          const userId = typeof s.user === 'object' ? s.user.id : s.user;
+                          return userId === selectedServiceman;
+                        });
+                        if (selected) {
+                          return typeof selected.user === 'object' 
+                            ? (selected.user.full_name || selected.user.username) 
+                            : `User #${selected.user}`;
+                        }
+                        return `User #${selectedServiceman}`;
+                      })()}
+                    </div>
+                  )}
                   
                   {availableServicemen.length === 0 ? (
                     <div className="alert alert-warning">
@@ -1192,23 +1218,54 @@ export default function ServiceRequestDetailPage() {
                   ) : (
                     <div className="list-group">
                       {availableServicemen.map((serviceman) => {
+                        // Extract the actual user ID from serviceman.user (which might be an object or number)
+                        const servicemanUserId = typeof serviceman.user === 'object' ? serviceman.user.id : serviceman.user;
+                        
                         const isCurrentlyAssigned = serviceRequest?.serviceman && 
                           (typeof serviceRequest.serviceman === 'object' 
-                            ? serviceRequest.serviceman.id === serviceman.user 
-                            : serviceRequest.serviceman === serviceman.user);
+                            ? serviceRequest.serviceman.id === servicemanUserId 
+                            : serviceRequest.serviceman === servicemanUserId);
+                        
+                        // Check if this is the client's preferred serviceman
+                        // API returns: preferred_serviceman: { id: 42, user: { full_name: "..." }, ... }
+                        const preferredServiceman = serviceRequest?.preferred_serviceman as any;
+                        const isPreferred = preferredServiceman && preferredServiceman.id && 
+                          preferredServiceman.id === serviceman.id;
+                        
+                        // Only log if there's a preferred serviceman to avoid console spam
+                        if (preferredServiceman) {
+                          console.log('🔍 [Serviceman List] Checking serviceman:', {
+                            servicemanId: serviceman.id,
+                            servicemanUserId,
+                            preferredServicemanId: preferredServiceman?.id,
+                            isPreferred,
+                            match: preferredServiceman.id === serviceman.id ? '✅ MATCH!' : '❌ No match'
+                          });
+                        }
                         
                         return (
                           <button
-                            key={serviceman.user}
-                            className={`list-group-item list-group-item-action ${selectedServiceman === serviceman.user ? 'active' : ''} ${isCurrentlyAssigned ? 'border-primary' : ''}`}
-                            onClick={() => setSelectedServiceman(serviceman.user)}
+                            key={serviceman.id}
+                            className={`list-group-item list-group-item-action ${selectedServiceman === servicemanUserId ? 'active' : ''} ${isCurrentlyAssigned ? 'border-primary' : ''} ${isPreferred ? 'border-success border-2' : ''}`}
+                            onClick={() => {
+                              console.log('✅ [Selection] Selected serviceman user ID:', servicemanUserId);
+                              setSelectedServiceman(servicemanUserId);
+                            }}
                           >
                             <div className="d-flex w-100 justify-content-between align-items-start">
                               <div className="flex-grow-1">
                                 <h6 className="mb-1">
-                                  {typeof serviceman.user === 'object' ? serviceman.user.username : `User #${serviceman.user}`}
+                                  {typeof serviceman.user === 'object' 
+                                    ? (serviceman.user.full_name || serviceman.user.username) 
+                                    : `User #${serviceman.user}`}
                                   {isCurrentlyAssigned && (
                                     <span className="badge bg-primary ms-2" style={{ fontSize: '10px' }}>Current</span>
+                                  )}
+                                  {isPreferred && (
+                                    <span className="badge bg-success ms-2" style={{ fontSize: '10px' }}>
+                                      <i className="bi bi-star-fill me-1"></i>
+                                      Client's Choice
+                                    </span>
                                   )}
                                 </h6>
                                 <div className="d-flex gap-3 small text-muted">
@@ -1245,25 +1302,65 @@ export default function ServiceRequestDetailPage() {
                       Backup Serviceman (Recommended)
                     </h6>
                     <p className="small text-muted mb-3">
-                      Select a backup serviceman who can take over if the primary serviceman becomes unavailable.
+                      Select a backup serviceman from the same category who can take over if the primary serviceman becomes unavailable.
                     </p>
-                    {availableServicemen.length > 0 && (
-                      <select 
-                        className="form-select"
-                        value={selectedBackupServiceman || ''}
-                        onChange={(e) => setSelectedBackupServiceman(e.target.value ? parseInt(e.target.value) : null)}
-                      >
-                        <option value="">-- Optional: Select Backup Serviceman --</option>
-                        {availableServicemen
-                          .filter(s => s.user !== selectedServiceman)
-                          .map((serviceman) => (
-                            <option key={serviceman.user} value={serviceman.user}>
-                              {typeof serviceman.user === 'object' ? serviceman.user.username : `User #${serviceman.user}`} 
-                              {' '}⭐ {serviceman.rating} ({serviceman.total_jobs_completed} jobs)
-                              {serviceman.is_available ? ' ✓ Available' : ' ⚠ Busy'}
-                            </option>
-                          ))}
-                      </select>
+                    {availableServicemen.length > 0 ? (
+                      <>
+                        <select 
+                          className="form-select form-select-lg"
+                          value={selectedBackupServiceman?.toString() || ''}
+                          onChange={(e) => {
+                            const value = e.target.value ? parseInt(e.target.value, 10) : null;
+                            console.log('🔄 [Backup] Raw value:', e.target.value);
+                            console.log('🔄 [Backup] Parsed value:', value);
+                            setSelectedBackupServiceman(value);
+                          }}
+                        >
+                          <option value="">-- Optional: Select Backup Serviceman --</option>
+                          {availableServicemen
+                            .filter(s => {
+                              const userId = typeof s.user === 'object' ? s.user.id : s.user;
+                              return userId !== selectedServiceman; // Exclude primary serviceman
+                            })
+                            .map((serviceman) => {
+                              const userId = typeof serviceman.user === 'object' ? serviceman.user.id : serviceman.user;
+                              const userName = typeof serviceman.user === 'object' 
+                                ? (serviceman.user.full_name || serviceman.user.username) 
+                                : `User #${serviceman.user}`;
+                              
+                              return (
+                                <option key={serviceman.id} value={userId}>
+                                  {userName} ⭐ {serviceman.rating} ({serviceman.total_jobs_completed} jobs)
+                                  {serviceman.is_available ? ' ✓ Available' : ' ⚠ Busy'}
+                                </option>
+                              );
+                            })}
+                        </select>
+                        {selectedBackupServiceman && (
+                          <div className="alert alert-success mt-2 mb-0 small">
+                            <i className="bi bi-check-circle-fill me-2"></i>
+                            Backup serviceman selected: <strong>
+                              {(() => {
+                                const backup = availableServicemen.find((s: any) => {
+                                  const userId = typeof s.user === 'object' ? s.user.id : s.user;
+                                  return userId === selectedBackupServiceman;
+                                });
+                                if (backup) {
+                                  return typeof backup.user === 'object' 
+                                    ? (backup.user.full_name || backup.user.username) 
+                                    : `User #${backup.user}`;
+                                }
+                                return 'Unknown';
+                              })()}
+                            </strong>
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <div className="alert alert-warning small mb-0">
+                        <i className="bi bi-exclamation-triangle me-2"></i>
+                        No other servicemen available in the {typeof serviceRequest?.category === 'object' ? serviceRequest.category.name : ''} category for backup.
+                      </div>
                     )}
                   </div>
                   
