@@ -463,7 +463,7 @@ export default function ClientDashboardPage(): React.ReactElement {
                     {/* Pending Review Actions - Action Required */}
                     {(() => {
                       const pendingReview = serviceRequests?.filter(req => 
-                        req.status === 'PENDING_CLIENT_REVIEW'
+                        req.status === 'COMPLETED'
                       ) || [];
 
                       if (pendingReview.length > 0) {
