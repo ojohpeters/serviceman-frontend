@@ -512,10 +512,10 @@ export interface PasswordResetConfirmData {
 export interface APIError {
   detail?: string;
   message?: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
-export interface APIResponse<T = any> {
+export interface APIResponse<T = unknown> {
   success: boolean;
   data?: T;
   error?: string | APIError;

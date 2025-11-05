@@ -7,7 +7,8 @@ import api from './api';
 import {
   ServiceRequest,
   CreateServiceRequestData,
-  ServiceRequestStatus
+  ServiceRequestStatus,
+  ServicemanProfile
 } from '../types/api';
 
 export const serviceRequestsService = {
@@ -131,7 +132,7 @@ export const serviceRequestsService = {
    * @param finalCost - Final cost amount
    */
   markAsCompleted: async (requestId: number, finalCost?: number): Promise<ServiceRequest> => {
-    const updateData: any = {
+    const updateData: Record<string, unknown> = {
       status: 'COMPLETED'
     };
     
@@ -160,7 +161,7 @@ export const serviceRequestsService = {
    * Get available servicemen for assignment (Admin only)
    * @param categoryId - Optional category filter
    */
-  getAvailableServicemenForAssignment: async (categoryId?: number): Promise<any[]> => {
+  getAvailableServicemenForAssignment: async (categoryId?: number): Promise<ServicemanProfile[]> => {
     const params = new URLSearchParams();
     params.append('is_available', 'true');
     if (categoryId) {
