@@ -91,7 +91,7 @@ export default function ProfilePage() {
                   <div className="card-body p-4">
                     {authUser?.user_type === 'CLIENT' && <ClientProfileEdit />}
                     {authUser?.user_type === 'SERVICEMAN' && (
-                      <ServicemanProfileEdit profile={servicemanProfile} />
+                      <ServicemanProfileEdit />
                     )}
                     {authUser?.user_type === 'ADMIN' && (
                       <div className="text-center py-5">

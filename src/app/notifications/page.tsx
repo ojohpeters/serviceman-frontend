@@ -19,7 +19,7 @@ export default function NotificationsPage() {
     loading, 
     error, 
     markAsRead, 
-    markAllRead 
+    markAllAsRead 
   } = useNotifications();
 
   const [filter, setFilter] = useState<'all' | 'unread' | 'read'>('all');
@@ -66,7 +66,7 @@ export default function NotificationsPage() {
 
   const handleMarkAllAsRead = async () => {
     try {
-      await markAllRead();
+      await markAllAsRead();
     } catch (error) {
       console.error('Failed to mark all notifications as read:', error);
     }

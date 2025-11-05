@@ -58,18 +58,20 @@ export default function WorkerDashboardPage(): React.ReactElement {
     const myJobs = serviceRequests.filter(req => {
       // Check primary serviceman
       if (req.serviceman) {
-        const servicemanUserId = typeof req.serviceman === 'object'
-          ? (typeof req.serviceman.user === 'object' ? req.serviceman.user.id : req.serviceman.user)
-          : req.serviceman;
+        const serviceman = req.serviceman as any;
+        const servicemanUserId = typeof serviceman === 'object'
+          ? (typeof serviceman.user === 'object' ? serviceman.user.id : serviceman.user)
+          : serviceman;
         if (servicemanUserId === user?.id) {
           return true;
         }
       }
       // Check backup serviceman
       if (req.backup_serviceman) {
-        const backupUserId = typeof req.backup_serviceman === 'object'
-          ? (typeof req.backup_serviceman.user === 'object' ? req.backup_serviceman.user.id : req.backup_serviceman.user)
-          : req.backup_serviceman;
+        const backup = req.backup_serviceman as any;
+        const backupUserId = typeof backup === 'object'
+          ? (typeof backup.user === 'object' ? backup.user.id : backup.user)
+          : backup;
         if (backupUserId === user?.id) {
           return true;
         }
