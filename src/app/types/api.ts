@@ -185,7 +185,7 @@ export interface CreateServiceRequestData {
 
 // ==================== Payment Types ====================
 
-export type PaymentType = 'INITIAL_BOOKING_FEE' | 'FINAL_PAYMENT';
+export type PaymentType = 'INITIAL_BOOKING_FEE' | 'FINAL_PAYMENT' | 'SERVICE_PAYMENT';
 export type PaymentStatus = 'PENDING' | 'SUCCESSFUL' | 'FAILED';
 
 export interface Payment {

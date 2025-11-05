@@ -428,24 +428,26 @@ export default function ServiceRequestDetailPage() {
       setPaymentLoading(true);
       console.log('💳 [Final Payment] Initializing payment for service request:', serviceRequest.id);
       console.log('💰 [Final Payment] Amount:', serviceRequest.final_cost);
+      console.log('📧 [Final Payment] Client email:', typeof serviceRequest.client === 'object' ? serviceRequest.client.email : user?.email);
 
       // Initialize final service payment
-      // Backend expects: { service_request_id, email }
-      const clientEmail = typeof serviceRequest.client === 'object' 
-        ? serviceRequest.client.email 
-        : user?.email || '';
+      // Backend expects: { service_request, payment_type, amount }
+      const requestBody = {
+        service_request: serviceRequest.id,
+        payment_type: 'SERVICE_PAYMENT',
+        amount: parseFloat(serviceRequest.final_cost)
+      };
       
-      const paymentResponse = await paymentsService.initializePayment({
-        service_request_id: serviceRequest.id,
-        email: clientEmail
-      } as any);
+      console.log('📤 [Final Payment] Request body:', requestBody);
+      
+      const paymentResponse = await paymentsService.initializePayment(requestBody as any);
 
       console.log('✅ [Final Payment] Payment initialized:', paymentResponse);
 
       // Save reference for verification
       localStorage.setItem('pendingPaymentReference', paymentResponse.reference);
       localStorage.setItem('pendingServiceRequestId', serviceRequest.id.toString());
-      localStorage.setItem('paymentType', 'FINAL_PAYMENT');
+      localStorage.setItem('paymentType', 'SERVICE_PAYMENT');
 
       console.log('📍 [Final Payment] Redirecting to Paystack:', paymentResponse.paystack_url);
 
@@ -858,10 +860,7 @@ export default function ServiceRequestDetailPage() {
                               </h5>
                               <div className="mb-3">
                                 <div className="d-flex justify-content-between align-items-center">
-                                  <div>
-                                    <strong className="d-block">Total Amount to Pay:</strong>
-                                    <small className="text-muted">All costs included</small>
-                                  </div>
+                                  <strong>Total Amount to Pay:</strong>
                                   <strong className="text-success" style={{ fontSize: '2rem' }}>
                                     ₦{serviceRequest.final_cost ? parseFloat(serviceRequest.final_cost).toLocaleString() : '0'}
                                   </strong>

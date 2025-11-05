@@ -50,7 +50,7 @@ export default function BookingPaymentCallback() {
       console.log("✅ [Callback] Payment verified successfully");
 
       // Handle based on payment type
-      if (paymentType === "FINAL_PAYMENT") {
+      if (paymentType === "FINAL_PAYMENT" || paymentType === "SERVICE_PAYMENT") {
         // Final service payment - just verify and redirect to request page
         setMessage("Payment successful! Redirecting...");
         setStatus("success");

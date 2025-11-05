@@ -38,7 +38,12 @@ export default function WorkerDashboardPage(): React.ReactElement {
 
   // Calculate earnings and performance metrics
   const metrics = useMemo(() => {
+    console.log('📊 [Worker Metrics] Calculating metrics...');
+    console.log('📊 [Worker Metrics] Service requests:', serviceRequests);
+    console.log('📊 [Worker Metrics] Current user ID:', user?.id);
+    
     if (!serviceRequests || !Array.isArray(serviceRequests)) {
+      console.log('⚠️ [Worker Metrics] No service requests available');
       return {
         totalJobs: 0,
         activeJobs: 0,
@@ -49,29 +54,63 @@ export default function WorkerDashboardPage(): React.ReactElement {
       };
     }
 
-    // Filter only jobs assigned to this serviceman
-    const myJobs = serviceRequests.filter(req => 
-      req.serviceman && (typeof req.serviceman === 'object' ? req.serviceman.id === user?.id : req.serviceman === user?.id)
-    );
+    // Filter only jobs assigned to this serviceman (primary or backup)
+    const myJobs = serviceRequests.filter(req => {
+      // Check primary serviceman
+      if (req.serviceman) {
+        const servicemanUserId = typeof req.serviceman === 'object'
+          ? (typeof req.serviceman.user === 'object' ? req.serviceman.user.id : req.serviceman.user)
+          : req.serviceman;
+        if (servicemanUserId === user?.id) {
+          return true;
+        }
+      }
+      // Check backup serviceman
+      if (req.backup_serviceman) {
+        const backupUserId = typeof req.backup_serviceman === 'object'
+          ? (typeof req.backup_serviceman.user === 'object' ? req.backup_serviceman.user.id : req.backup_serviceman.user)
+          : req.backup_serviceman;
+        if (backupUserId === user?.id) {
+          return true;
+        }
+      }
+      return false;
+    });
+
+    console.log('📊 [Worker Metrics] My jobs:', myJobs);
+    console.log('📊 [Worker Metrics] Total jobs:', myJobs.length);
 
     const totalJobs = myJobs.length;
     const activeJobs = myJobs.filter(req => 
-      req.status === 'IN_PROGRESS' || req.status === 'ASSIGNED_TO_SERVICEMAN'
+      req.status === 'IN_PROGRESS' || req.status === 'PAYMENT_COMPLETED'
     ).length;
-    const completedJobs = myJobs.filter(req => req.status === 'COMPLETED').length;
+    const completedJobs = myJobs.filter(req => 
+      req.status === 'COMPLETED' || req.status === 'CLIENT_REVIEWED'
+    ).length;
     const pendingReview = myJobs.filter(req => 
-      req.status === 'PENDING_ADMIN_ASSIGNMENT' || req.status === 'AWAITING_ASSIGNMENT'
+      req.status === 'PENDING_ESTIMATION'
     ).length;
 
     // Calculate estimated earnings from completed and ongoing jobs
+    // Use serviceman_estimated_cost or final_cost
     const estimatedEarnings = myJobs.reduce((sum, req) => {
-      if (req.status === 'COMPLETED' || req.status === 'IN_PROGRESS') {
-        return sum + (req.cost_estimate || req.initial_booking_fee || 0);
+      if (req.status === 'COMPLETED' || req.status === 'CLIENT_REVIEWED' || req.status === 'IN_PROGRESS') {
+        const amount = req.serviceman_estimated_cost || req.final_cost || req.initial_booking_fee || 0;
+        return sum + (typeof amount === 'string' ? parseFloat(amount) : amount);
       }
       return sum;
     }, 0);
 
     const completionRate = totalJobs > 0 ? Math.round((completedJobs / totalJobs) * 100) : 0;
+
+    console.log('📊 [Worker Metrics] Results:', { 
+      totalJobs, 
+      activeJobs, 
+      completedJobs, 
+      pendingReview, 
+      estimatedEarnings, 
+      completionRate 
+    });
 
     return { totalJobs, activeJobs, completedJobs, pendingReview, estimatedEarnings, completionRate };
   }, [serviceRequests, user]);
