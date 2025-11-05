@@ -63,15 +63,19 @@ export default function AdminServiceRequestsPage() {
       return {
         total: 0,
         pendingAssignment: 0,
+        pendingEstimation: 0,
+        estimationSubmitted: 0,
+        awaitingApproval: 0,
+        paymentCompleted: 0,
+        inProgress: 0,
+        completed: 0,
+        clientReviewed: 0,
+        cancelled: 0,
         assigned: 0,
         inspected: 0,
-        awaitingApproval: 0,
         negotiating: 0,
         awaitingPayment: 0,
         paymentConfirmed: 0,
-        inProgress: 0,
-        completed: 0,
-        cancelled: 0,
         emergency: 0,
       };
     }

@@ -15,6 +15,9 @@ import {
   User
 } from '../types/api';
 
+// Re-export types for convenience
+export type { LoginCredentials, TokenResponse, RegisterData, User };
+
 const BASE_URL = 'https://serviceman-backend.onrender.com/api';
 
 export interface ClientRegisterData {

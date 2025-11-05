@@ -11,6 +11,9 @@ import {
   CategoryServicemenResponse
 } from '../types/api';
 
+// Re-export types for convenience
+export type { Category, CreateCategoryData, UpdateCategoryData };
+
 export const categoriesService = {
   /**
    * Get all categories

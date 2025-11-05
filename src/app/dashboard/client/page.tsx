@@ -60,8 +60,7 @@ export default function ClientDashboardPage(): React.ReactElement {
       request.status === 'AWAITING_PAYMENT'
     ).length;
     const awaitingAssignment = serviceRequests.filter(request => 
-      request.status === 'PENDING_ADMIN_ASSIGNMENT' || 
-      request.status === 'AWAITING_ASSIGNMENT'
+      request.status === 'PENDING_ADMIN_ASSIGNMENT'
     ).length;
 
     return { totalRequests, ongoingJobs, completedJobs, pendingPayment, awaitingAssignment };

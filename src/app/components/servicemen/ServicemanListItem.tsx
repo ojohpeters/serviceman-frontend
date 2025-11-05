@@ -1,19 +1,29 @@
 "use client";
 
 import React from "react";
-import type { ServicemanSummary } from "../../services/categories";
+import type { ServicemanProfile } from "../../types/api";
 import { useRouter } from "next/navigation";
 
 interface Props {
-  serviceman: ServicemanSummary;
+  serviceman: ServicemanProfile;
 }
 
 export default function ServicemanListItem({ serviceman }: Props) {
   const router = useRouter();
-  const { id, full_name, rating, total_jobs_completed, years_of_experience, bio } = serviceman;
+  
+  // Extract user details
+  const user = typeof serviceman.user === 'object' ? serviceman.user : null;
+  const userId = typeof serviceman.user === 'object' ? serviceman.user.id : serviceman.user;
+  const full_name = (user as any)?.full_name || 
+                    (user?.first_name && user?.last_name ? `${user.first_name} ${user.last_name}` : user?.username) || 
+                    'Service Professional';
+  const rating = parseFloat(serviceman.rating) || 0;
+  const total_jobs_completed = serviceman.total_jobs_completed || 0;
+  const years_of_experience = serviceman.years_of_experience || 0;
+  const bio = serviceman.bio || '';
 
   const handleCardClick = () => {
-    router.push(`/servicemen/${id}`);
+    router.push(`/servicemen/${userId}`);
   };
 
   // Generate a color based on rating
@@ -73,7 +83,7 @@ export default function ServicemanListItem({ serviceman }: Props) {
                 border: '3px solid #f8f9fa'
               }}
             >
-              {full_name.split(' ').map(n => n[0]).join('').toUpperCase()}
+              {full_name.split(' ').map((n: string) => n[0]).join('').toUpperCase()}
             </div>
           </div>
 

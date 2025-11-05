@@ -15,15 +15,17 @@ export default function WorkerStats({ serviceRequests, servicemanProfile }: Work
     ).length;
 
     const pendingRequests = serviceRequests.filter(request => 
-      request.status === 'ASSIGNED_TO_SERVICEMAN' || 
-      request.status === 'PENDING_PAYMENT'
+      request.status === 'PENDING_ESTIMATION' || 
+      request.status === 'ESTIMATION_SUBMITTED'
     ).length;
 
     // Calculate earnings from completed jobs (using final_cost or serviceman_estimated_cost)
     const earnings = serviceRequests
       .filter(request => request.status === 'COMPLETED')
       .reduce((total, request) => {
-        return total + (request.final_cost || request.serviceman_estimated_cost || 0);
+        const amount = request.final_cost || request.serviceman_estimated_cost || 0;
+        const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
+        return total + numAmount;
       }, 0);
 
     // Safely handle rating - ensure it's a number

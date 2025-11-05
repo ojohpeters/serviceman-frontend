@@ -14,6 +14,9 @@ import {
   ServicemenFilters
 } from '../types/api';
 
+// Re-export types for convenience
+export type { User, ClientProfile, ServicemanProfile, UpdateClientProfileData, UpdateServicemanProfileData };
+
 export const userProfileService = {
   // ==================== Current User ====================
 

@@ -11,6 +11,9 @@ import {
   ServicemanProfile
 } from '../types/api';
 
+// Re-export types for convenience
+export type { ServiceRequest, CreateServiceRequestData, ServiceRequestStatus, ServicemanProfile };
+
 export const serviceRequestsService = {
   /**
    * Create new service request (Client only)

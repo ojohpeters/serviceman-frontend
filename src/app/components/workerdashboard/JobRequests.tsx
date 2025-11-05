@@ -85,20 +85,20 @@ export default function JobRequests({ serviceRequests, loading = false }: JobReq
                   return (
                     <tr key={request.id}>
                       <td>
-                        <div className="fw-semibold">{request.description}</div>
+                        <div className="fw-semibold">{request.service_description}</div>
                         <div className="small text-muted">ID: {request.id}</div>
                       </td>
                       <td>
                         <div className="small">
                           {typeof request.client === 'object' 
-                            ? (request.client.full_name || request.client.username || `Client #${request.client.id}`)
+                            ? ((request.client as any).full_name || request.client.username || `Client #${request.client.id}`)
                             : `Client #${request.client}`}
                         </div>
                       </td>
                       <td>{formatDate(request.booking_date)}</td>
                       <td>
                         <div className="small text-truncate" style={{ maxWidth: '120px' }}>
-                          {request.address}
+                          {request.client_address}
                         </div>
                       </td>
                       <td>

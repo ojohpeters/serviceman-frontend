@@ -1,10 +1,8 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import {
-  categoriesService,
-  type ServicemanSummary,
-} from "../../../services/categories";
+import { categoriesService } from "../../../services/categories";
+import type { ServicemanProfile } from "../../../types/api";
 import ServicemanListItem from "../../../components/servicemen/ServicemanListItem";
 import Nav from "../../../components/common/Nav";
 import SecondFooter from "../../../components/common/SecondFooter";
