@@ -6,6 +6,7 @@ import serviceRequestsService from '../../services/serviceRequests';
 import { ServiceRequest } from '../../types/api';
 import notificationsService from '../../services/notifications';
 import { adminService } from '../../services/admin';
+import { paymentsService } from '../../services/payments';
 import { useAuth } from '../../contexts/AuthContext';
 import { useUser } from '../../contexts/UserContext';
 import { getStatusConfig, getProgressPercent, requiresPayment, requiresReview, canCancelRequest } from '../../utils/statusHelpers';
@@ -41,6 +42,7 @@ export default function ServiceRequestDetailPage() {
   const [selectedServiceman, setSelectedServiceman] = useState<number | null>(null);
   const [selectedBackupServiceman, setSelectedBackupServiceman] = useState<number | null>(null);
   const [assignmentNotes, setAssignmentNotes] = useState('');
+  const [paymentLoading, setPaymentLoading] = useState(false);
 
   const requestId = params.id as string;
 
@@ -96,10 +98,54 @@ export default function ServiceRequestDetailPage() {
     if (user.user_type === 'ADMIN') return true;
     
     // Client can view their own requests
-    if (user.user_type === 'CLIENT' && userData?.id === serviceRequest.client?.id) return true;
+    // Handle both cases: client as ID or as object
+    if (user.user_type === 'CLIENT') {
+      const clientId = typeof serviceRequest.client === 'object' 
+        ? serviceRequest.client.id 
+        : serviceRequest.client;
+      if (userData?.id === clientId) return true;
+    }
     
-    // Serviceman can view requests assigned to them
-    if (user.user_type === 'SERVICEMAN' && userData?.id === serviceRequest.serviceman?.id) return true;
+    // Serviceman can view requests assigned to them (primary or backup)
+    if (user.user_type === 'SERVICEMAN') {
+      // Check primary serviceman
+      if (serviceRequest.serviceman) {
+        const serviceman = serviceRequest.serviceman as any;
+        const servicemanUserId = typeof serviceman === 'object'
+          ? (typeof serviceman.user === 'object' 
+              ? serviceman.user.id 
+              : serviceman.user)
+          : serviceman;
+        
+        if (userData?.id === servicemanUserId) {
+          console.log('✅ [Permission] Serviceman has access as PRIMARY serviceman');
+          return true;
+        }
+      }
+      
+      // Check backup serviceman
+      if (serviceRequest.backup_serviceman) {
+        const backup = serviceRequest.backup_serviceman as any;
+        const backupUserId = typeof backup === 'object'
+          ? (typeof backup.user === 'object'
+              ? backup.user.id
+              : backup.user)
+          : backup;
+        
+        if (userData?.id === backupUserId) {
+          console.log('✅ [Permission] Serviceman has access as BACKUP serviceman');
+          return true;
+        }
+      }
+    }
+    
+    console.log('❌ [Permission] Access denied:', {
+      userType: user.user_type,
+      userId: userData?.id,
+      servicemanUserId: serviceRequest.serviceman,
+      backupUserId: serviceRequest.backup_serviceman,
+      clientId: serviceRequest.client
+    });
     
     return false;
   };
@@ -363,6 +409,63 @@ export default function ServiceRequestDetailPage() {
       alert('Failed to confirm completion: ' + (error.response?.data?.detail || error.response?.data?.error || error.message));
     } finally {
       setActionLoading(false);
+    }
+  };
+
+  // STEP 5: Client Payment for Final Service Cost
+  const handleFinalPayment = async () => {
+    if (!serviceRequest || !serviceRequest.final_cost) {
+      alert('Final cost not available yet');
+      return;
+    }
+
+    if (serviceRequest.status !== 'AWAITING_CLIENT_APPROVAL') {
+      alert('This request is not ready for payment');
+      return;
+    }
+
+    try {
+      setPaymentLoading(true);
+      console.log('💳 [Final Payment] Initializing payment for service request:', serviceRequest.id);
+      console.log('💰 [Final Payment] Amount:', serviceRequest.final_cost);
+
+      // Initialize final service payment
+      // Backend expects: { service_request_id, email }
+      const clientEmail = typeof serviceRequest.client === 'object' 
+        ? serviceRequest.client.email 
+        : user?.email || '';
+      
+      const paymentResponse = await paymentsService.initializePayment({
+        service_request_id: serviceRequest.id,
+        email: clientEmail
+      } as any);
+
+      console.log('✅ [Final Payment] Payment initialized:', paymentResponse);
+
+      // Save reference for verification
+      localStorage.setItem('pendingPaymentReference', paymentResponse.reference);
+      localStorage.setItem('pendingServiceRequestId', serviceRequest.id.toString());
+      localStorage.setItem('paymentType', 'FINAL_PAYMENT');
+
+      console.log('📍 [Final Payment] Redirecting to Paystack:', paymentResponse.paystack_url);
+
+      // Redirect to Paystack
+      window.location.href = paymentResponse.paystack_url;
+
+    } catch (error: any) {
+      console.error('❌ [Final Payment] Payment initialization failed:', error);
+      
+      let errorMessage = 'Failed to initialize payment. Please try again.';
+      if (error.response?.data?.detail) {
+        errorMessage = error.response.data.detail;
+      } else if (error.response?.data?.error) {
+        errorMessage = error.response.data.error;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      alert(errorMessage);
+      setPaymentLoading(false);
     }
   };
 
@@ -672,22 +775,25 @@ export default function ServiceRequestDetailPage() {
                 </div>
                 <div className="card-body">
                   <div className="row text-center">
-                    <div className="col-md-4 mb-3">
-                      <div className="p-3 bg-light rounded">
-                        <strong className="d-block mb-2">Serviceman Estimate</strong>
-                        <h4 className={`mb-0 ${
-                          serviceRequest.serviceman_estimated_cost ? 'text-primary' : 'text-muted'
-                        }`}>
-                          {formatCurrency(serviceRequest.serviceman_estimated_cost)}
-                        </h4>
-                        <small className="text-muted">
-                          {serviceRequest.serviceman_estimated_cost ? 
-                            'Estimate provided' : 'Awaiting estimate'
-                          }
-                        </small>
+                    {/* Only show serviceman estimate to admin and serviceman, not to client */}
+                    {(user?.user_type === 'ADMIN' || user?.user_type === 'SERVICEMAN') && (
+                      <div className="col-md-4 mb-3">
+                        <div className="p-3 bg-light rounded">
+                          <strong className="d-block mb-2">Serviceman Estimate</strong>
+                          <h4 className={`mb-0 ${
+                            serviceRequest.serviceman_estimated_cost ? 'text-primary' : 'text-muted'
+                          }`}>
+                            {formatCurrency(serviceRequest.serviceman_estimated_cost)}
+                          </h4>
+                          <small className="text-muted">
+                            {serviceRequest.serviceman_estimated_cost ? 
+                              'Estimate provided' : 'Awaiting estimate'
+                            }
+                          </small>
+                        </div>
                       </div>
-                    </div>
-                    <div className="col-md-4 mb-3">
+                    )}
+                    <div className={user?.user_type === 'CLIENT' ? 'col-md-6 mb-3' : 'col-md-4 mb-3'}>
                       <div className="p-3 bg-light rounded">
                         <strong className="d-block mb-2">Final Cost</strong>
                         <h4 className={`mb-0 ${
@@ -702,7 +808,7 @@ export default function ServiceRequestDetailPage() {
                         </small>
                       </div>
                     </div>
-                    <div className="col-md-4 mb-3">
+                    <div className={user?.user_type === 'CLIENT' ? 'col-md-6 mb-3' : 'col-md-4 mb-3'}>
                       <div className="p-3 bg-light rounded">
                         <strong className="d-block mb-2">Payment Status</strong>
                         <div className="mb-2">
@@ -744,13 +850,36 @@ export default function ServiceRequestDetailPage() {
                       {/* STEP 5: Client Payment */}
                       {serviceRequest.status === 'AWAITING_CLIENT_APPROVAL' && (
                         <div>
-                          <div className="alert alert-warning mb-3">
-                            <strong>Final Price:</strong> ₦{serviceRequest.final_cost ? parseFloat(serviceRequest.final_cost).toLocaleString() : '0'}
-                            <div className="small mt-1">Please review and approve to proceed</div>
+                          <div className="card border-primary mb-3">
+                            <div className="card-body">
+                              <h5 className="card-title text-primary mb-3">
+                                <i className="bi bi-currency-exchange me-2"></i>
+                                Final Price Ready
+                              </h5>
+                              <div className="mb-3">
+                                <div className="d-flex justify-content-between align-items-center">
+                                  <div>
+                                    <strong className="d-block">Total Amount to Pay:</strong>
+                                    <small className="text-muted">All costs included</small>
+                                  </div>
+                                  <strong className="text-success" style={{ fontSize: '2rem' }}>
+                                    ₦{serviceRequest.final_cost ? parseFloat(serviceRequest.final_cost).toLocaleString() : '0'}
+                                  </strong>
+                                </div>
+                              </div>
+                              <div className="alert alert-info small mb-0">
+                                <i className="bi bi-info-circle me-1"></i>
+                                Pay now to authorize the serviceman to begin work
+                              </div>
+                            </div>
                           </div>
-                          <button className="btn btn-primary btn-lg w-100">
+                          <button 
+                            className="btn btn-success btn-lg w-100"
+                            onClick={handleFinalPayment}
+                            disabled={paymentLoading}
+                          >
                             <i className="bi bi-credit-card me-2"></i>
-                            Pay Now
+                            {paymentLoading ? 'Redirecting to Paystack...' : 'Pay Now'}
                           </button>
                         </div>
                       )}
@@ -777,10 +906,10 @@ export default function ServiceRequestDetailPage() {
                       
                       {(displayStatus === 'PENDING_ESTIMATION' || serviceRequest.status === 'ESTIMATION_SUBMITTED') && (
                         <div className="alert alert-info border-0 mb-0">
-                          <i className="bi bi-calculator me-2"></i>
+                          <i className="bi bi-hourglass-split me-2"></i>
                           {displayStatus === 'PENDING_ESTIMATION' 
-                            ? 'Serviceman is preparing your cost estimate'
-                            : 'Admin is reviewing the estimate'}
+                            ? 'Your estimate is being prepared by the serviceman'
+                            : 'Your estimate is being processed. You will be notified when ready for approval.'}
                         </div>
                       )}
                       
@@ -1095,30 +1224,95 @@ export default function ServiceRequestDetailPage() {
                   {/* Show Client's Preferred Serviceman if exists */}
                   {serviceRequest?.preferred_serviceman && (() => {
                     const preferred = serviceRequest.preferred_serviceman as any;
-                    // API returns: preferred_serviceman: { id: 42, user: { full_name: "John Plumber" }, ... }
-                    const preferredUser = preferred.user;
-                    const userName = typeof preferredUser === 'object' 
-                      ? (preferredUser.full_name || preferredUser.username || 'Unknown Serviceman')
-                      : `Serviceman ID: ${preferred.id}`;
+                    
+                    // Handle different response formats from backend
+                    let userName = 'Unknown Serviceman';
+                    let servicemanId = null;
+                    
+                    // Case 1: preferred_serviceman is just a number (ID only)
+                    if (typeof preferred === 'number') {
+                      servicemanId = preferred;
+                      // Try to find the serviceman in availableServicemen list
+                      const foundServiceman = availableServicemen.find((s: any) => s.id === preferred);
+                      if (foundServiceman && foundServiceman.user) {
+                        if (typeof foundServiceman.user === 'object') {
+                          userName = foundServiceman.user.full_name || foundServiceman.user.username || `Serviceman #${preferred}`;
+                        } else {
+                          userName = `Serviceman #${preferred}`;
+                        }
+                      } else {
+                        userName = `Serviceman #${preferred}`;
+                      }
+                    }
+                    // Case 2: preferred_serviceman is an object with user property
+                    else if (preferred && typeof preferred === 'object') {
+                      servicemanId = preferred.id;
+                      if (preferred.user) {
+                        if (typeof preferred.user === 'object') {
+                          userName = preferred.user.full_name || preferred.user.username || 'Unknown Serviceman';
+                        } else {
+                          // user is just an ID, try to find in availableServicemen
+                          const foundServiceman = availableServicemen.find((s: any) => {
+                            const sUserId = typeof s.user === 'object' ? s.user.id : s.user;
+                            return sUserId === preferred.user;
+                          });
+                          if (foundServiceman && typeof foundServiceman.user === 'object') {
+                            userName = foundServiceman.user.full_name || foundServiceman.user.username || `Serviceman #${preferred.user}`;
+                          } else {
+                            userName = `Serviceman #${preferred.user}`;
+                          }
+                        }
+                      } else if (servicemanId) {
+                        userName = `Serviceman #${servicemanId}`;
+                      }
+                    }
                     
                     console.log('🎨 [Preferred Display] Rendering preferred serviceman card:', {
                       preferred,
-                      preferredUser,
-                      userName
+                      servicemanId,
+                      userName,
+                      availableServicemenCount: availableServicemen.length
                     });
                     
+                    // Show warning if backend returned incomplete data
+                    const isIncompleteData = typeof preferred === 'number' || 
+                                            (typeof preferred === 'object' && !preferred.user) ||
+                                            (typeof preferred === 'object' && typeof preferred.user !== 'object');
+                    
                     return (
-                      <div className="card border-success border-3 mb-4 shadow">
-                        <div className="card-header bg-success bg-opacity-10 border-bottom border-success">
-                          <h5 className="mb-0 text-success">
-                            <i className="bi bi-star-fill me-2"></i>
-                            💡 Client's Preferred Serviceman
-                          </h5>
-                        </div>
-                        <div className="card-body">
-                          <div className="row">
-                            <div className="col-md-8">
-                              <h4 className="mb-3 text-dark">{userName}</h4>
+                      <>
+                        {isIncompleteData && (
+                          <div className="alert alert-warning border-warning mb-3">
+                            <div className="d-flex align-items-start">
+                              <i className="bi bi-exclamation-triangle-fill me-2 mt-1"></i>
+                              <div>
+                                <strong>⚠️ Backend API Issue Detected</strong>
+                                <p className="mb-1 small">
+                                  <strong>Problem:</strong> The backend is returning <code>preferred_serviceman: {typeof preferred === 'number' ? preferred : preferred.id}</code> (incomplete data).
+                                </p>
+                                <p className="mb-1 small">
+                                  <strong>Expected:</strong> Full serviceman object with expanded user details.
+                                </p>
+                                <p className="mb-0 small">
+                                  <strong>Backend Team:</strong> Please update the <code>GET /api/services/service-requests/{'{id}'}/</code> endpoint 
+                                  to return <code>preferred_serviceman</code> with full details (user object, rating, skills, etc.)
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                        
+                        <div className="card border-success border-3 mb-4 shadow">
+                          <div className="card-header bg-success bg-opacity-10 border-bottom border-success">
+                            <h5 className="mb-0 text-success">
+                              <i className="bi bi-star-fill me-2"></i>
+                              💡 Client's Preferred Serviceman
+                            </h5>
+                          </div>
+                          <div className="card-body">
+                            <div className="row">
+                              <div className="col-md-8">
+                                <h4 className="mb-3 text-dark">{userName}</h4>
                               
                               {preferred.rating && (
                                 <div className="mb-3">
@@ -1177,6 +1371,7 @@ export default function ServiceRequestDetailPage() {
                           </div>
                         </div>
                       </div>
+                      </>
                     );
                   })()}
                   
@@ -1434,10 +1629,6 @@ export default function ServiceRequestDetailPage() {
                       onChange={(e) => setEstimateNotes(e.target.value)}
                       placeholder="e.g. Includes parts replacement and 2 days labor"
                     ></textarea>
-                  </div>
-                  <div className="alert alert-info mb-0">
-                    <i className="bi bi-info-circle me-2"></i>
-                    <small>Admin will review and add platform fee before sending to client</small>
                   </div>
                 </div>
                 <div className="modal-footer">

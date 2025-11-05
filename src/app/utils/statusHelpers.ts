@@ -47,11 +47,11 @@ const statusConfigs: Record<string, StatusConfig> = {
   },
   
   [ServiceRequestStatus.ESTIMATION_SUBMITTED]: {
-    label: "Processing Estimate",
-    description: "Admin is adding platform fees",
-    color: "warning",
-    badgeClass: "bg-warning text-dark",
-    icon: "file-earmark-check",
+    label: "Processing",
+    description: "Processing your request",
+    color: "info",
+    badgeClass: "bg-info text-white",
+    icon: "hourglass-split",
     canCancel: true,
     isActionRequired: false,
     progressPercent: 25,

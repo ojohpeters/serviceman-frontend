@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "build:skip-lint": "DISABLE_ESLINT_PLUGIN=true next build",
     "start": "next start",
     "lint": "eslint"
   },

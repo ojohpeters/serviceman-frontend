@@ -89,7 +89,11 @@ export default function JobRequests({ serviceRequests, loading = false }: JobReq
                         <div className="small text-muted">ID: {request.id}</div>
                       </td>
                       <td>
-                        <div className="small">Client #{request.client}</div>
+                        <div className="small">
+                          {typeof request.client === 'object' 
+                            ? (request.client.full_name || request.client.username || `Client #${request.client.id}`)
+                            : `Client #${request.client}`}
+                        </div>
                       </td>
                       <td>{formatDate(request.booking_date)}</td>
                       <td>

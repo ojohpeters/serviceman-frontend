@@ -29,6 +29,13 @@ export default function BookingPaymentCallback() {
       console.log("🔍 [Callback] Payment reference:", reference);
       setMessage("Verifying payment with Paystack...");
 
+      // Check if this is a final service payment or initial booking fee
+      const paymentType = localStorage.getItem("paymentType");
+      const serviceRequestId = localStorage.getItem("pendingServiceRequestId");
+
+      console.log("💳 [Callback] Payment type:", paymentType);
+      console.log("📋 [Callback] Service request ID:", serviceRequestId);
+
       // 1. Verify payment
       const verifyResponse = await paymentsService.verifyPayment(reference!);
 
@@ -41,38 +48,62 @@ export default function BookingPaymentCallback() {
       }
 
       console.log("✅ [Callback] Payment verified successfully");
-      setMessage("Payment verified! Creating your service request...");
 
-      // 2. Get saved service request data from localStorage
-      const savedData = localStorage.getItem("pendingServiceRequest");
-      if (!savedData) {
-        throw new Error("No pending service request found. Please start over.");
+      // Handle based on payment type
+      if (paymentType === "FINAL_PAYMENT") {
+        // Final service payment - just verify and redirect to request page
+        setMessage("Payment successful! Redirecting...");
+        setStatus("success");
+        setRequestId(serviceRequestId ? parseInt(serviceRequestId) : null);
+
+        // Clear saved data
+        localStorage.removeItem("pendingPaymentReference");
+        localStorage.removeItem("pendingServiceRequestId");
+        localStorage.removeItem("paymentType");
+
+        // Redirect to service request page after 2 seconds
+        setTimeout(() => {
+          if (serviceRequestId) {
+            router.push(`/service-requests/${serviceRequestId}`);
+          } else {
+            router.push("/dashboard/client");
+          }
+        }, 2000);
+      } else {
+        // Initial booking fee - create service request
+        setMessage("Payment verified! Creating your service request...");
+
+        // 2. Get saved service request data from localStorage
+        const savedData = localStorage.getItem("pendingServiceRequest");
+        if (!savedData) {
+          throw new Error("No pending service request found. Please start over.");
+        }
+
+        const requestData = JSON.parse(savedData);
+        console.log("📦 [Callback] Retrieved saved request data:", requestData);
+
+        // 3. Create service request with payment reference
+        const createResponse = await serviceRequestsService.createServiceRequest({
+          ...requestData,
+          payment_reference: reference!,
+        } as CreateServiceRequestData);
+
+        console.log("✅ [Callback] Service request created:", createResponse);
+
+        // 4. Clear saved data
+        localStorage.removeItem("pendingPaymentReference");
+        localStorage.removeItem("pendingServiceRequest");
+
+        // 5. Show success
+        setStatus("success");
+        setMessage("Service request created successfully!");
+        setRequestId(createResponse.id);
+
+        // 6. Redirect to client dashboard after 3 seconds
+        setTimeout(() => {
+          router.push("/dashboard/client");
+        }, 3000);
       }
-
-      const requestData = JSON.parse(savedData);
-      console.log("📦 [Callback] Retrieved saved request data:", requestData);
-
-      // 3. Create service request with payment reference
-      const createResponse = await serviceRequestsService.createServiceRequest({
-        ...requestData,
-        payment_reference: reference!,
-      } as CreateServiceRequestData);
-
-      console.log("✅ [Callback] Service request created:", createResponse);
-
-      // 4. Clear saved data
-      localStorage.removeItem("pendingPaymentReference");
-      localStorage.removeItem("pendingServiceRequest");
-
-      // 5. Show success
-      setStatus("success");
-      setMessage("Service request created successfully!");
-      setRequestId(createResponse.id);
-
-      // 6. Redirect to client dashboard after 3 seconds
-      setTimeout(() => {
-        router.push("/dashboard/client");
-      }, 3000);
     } catch (error: any) {
       console.error("❌ [Callback] Error:", error);
       setStatus("failed");

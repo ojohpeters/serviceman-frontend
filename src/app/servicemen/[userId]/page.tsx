@@ -107,6 +107,12 @@ export default function ServicemanPublicProfilePage({ params }: PageProps) {
     const formattedDate = bookingDetails.booking_date.split('T')[0];
     const initialBookingFee = bookingDetails.is_emergency ? 5000 : 2000;
     
+    // Get serviceman user ID for preferred_serviceman_id
+    // The profile.user can be either an object or a number (ID)
+    const servicemanUserId = typeof profile.user === 'object' 
+      ? profile.user.id 
+      : profile.user;
+    
     // Prepare request data (without payment_reference for now)
     const requestData = {
       category_id: categoryId,
@@ -115,9 +121,12 @@ export default function ServicemanPublicProfilePage({ params }: PageProps) {
       client_address: bookingDetails.client_address,
       service_description: bookingDetails.service_description,
       initial_booking_fee: initialBookingFee,
+      preferred_serviceman_id: Number(userId), // ✅ CRITICAL: Include the serviceman the client is booking!
     };
 
     console.log('📋 [Booking] Request data prepared:', requestData);
+    console.log('✅ [Booking] Client selected serviceman ID:', Number(userId));
+    console.log('✅ [Booking] Serviceman name:', getDisplayName());
 
     // Save to localStorage for use after payment
     localStorage.setItem('pendingServiceRequest', JSON.stringify(requestData));
@@ -673,19 +682,31 @@ export default function ServicemanPublicProfilePage({ params }: PageProps) {
                   <div className="modal-body" style={{ maxHeight: '70vh', overflowY: 'auto' }}>
                     
                     {/* Serviceman Info Summary */}
-                    <div className="card bg-light border-0 mb-4">
+                    <div className="card bg-success bg-opacity-10 border-success border-2 mb-4">
                       <div className="card-body py-3">
                         <div className="d-flex align-items-center">
-                          <div className="bg-primary bg-opacity-10 rounded-circle p-2 me-3">
-                            <i className="bi bi-person-badge text-primary fs-4"></i>
+                          <div className="bg-success bg-opacity-25 rounded-circle p-2 me-3">
+                            <i className="bi bi-star-fill text-success fs-4"></i>
                           </div>
-                          <div>
-                            <div className="fw-bold text-dark">{getDisplayName()}</div>
-                            <small className="text-muted">
-                              {(profile?.category && typeof profile.category === 'object' && profile.category.name) || 'Service Professional'} • 
-                              <span className="ms-1">
-                                <i className="bi bi-star-fill text-warning"></i> {profile?.rating || 'N/A'}
+                          <div className="flex-grow-1">
+                            <div className="d-flex align-items-center justify-content-between">
+                              <div>
+                                <div className="fw-bold text-dark">{getDisplayName()}</div>
+                                <small className="text-muted">
+                                  {(profile?.category && typeof profile.category === 'object' && profile.category.name) || 'Service Professional'} • 
+                                  <span className="ms-1">
+                                    <i className="bi bi-star-fill text-warning"></i> {profile?.rating || 'N/A'}
+                                  </span>
+                                </small>
+                              </div>
+                              <span className="badge bg-success">
+                                <i className="bi bi-hand-thumbs-up-fill me-1"></i>
+                                Your Choice
                               </span>
+                            </div>
+                            <small className="text-success mt-2 d-block">
+                              <i className="bi bi-info-circle-fill me-1"></i>
+                              This serviceman will be recommended to the admin for your job
                             </small>
                           </div>
                         </div>

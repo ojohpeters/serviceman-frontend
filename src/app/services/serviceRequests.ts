@@ -196,14 +196,14 @@ export const serviceRequestsService = {
   submitEstimate: async (
     requestId: number,
     estimatedPrice: number,
-    estimatedCompletionDays?: number,
-    notes?: string
+    notes?: string,
+    estimatedCompletionDays?: number
   ): Promise<{ message: string; service_request: ServiceRequest }> => {
     const response = await api.post(
       `/services/service-requests/${requestId}/submit-estimate/`,
       {
-        estimated_price: estimatedPrice,  // ✅ Fixed: was "estimated_cost", should be "estimated_price"
-        estimated_completion_days: estimatedCompletionDays || 1,  // ✅ Added missing field
+        estimated_cost: estimatedPrice,  // Backend expects "estimated_cost"
+        estimated_completion_days: estimatedCompletionDays || 1,
         notes: notes || ''
       }
     );
