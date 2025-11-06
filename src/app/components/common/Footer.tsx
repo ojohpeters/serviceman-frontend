@@ -29,26 +29,26 @@ const Footer = () => (
           <ul className="list-unstyled">
             <li className="mb-2">
               <a
-                href="#"
+                href="/categories"
                 className="text-decoration-none sophisticated-footer-link"
               >
-                Home Services
+                Browse Categories
               </a>
             </li>
             <li className="mb-2">
               <a
-                href="#"
+                href="/servicemen"
                 className="text-decoration-none sophisticated-footer-link"
               >
-                Business Services
+                Find Professionals
               </a>
             </li>
             <li className="mb-2">
               <a
-                href="#"
+                href="/servicemen?is_available=true"
                 className="text-decoration-none sophisticated-footer-link"
               >
-                Emergency Services
+                Available Now
               </a>
             </li>
           </ul>
@@ -63,7 +63,7 @@ const Footer = () => (
           <ul className="list-unstyled">
             <li className="mb-2">
               <a
-                href="#"
+                href="/about"
                 className="text-decoration-none sophisticated-footer-link"
               >
                 About Us
@@ -71,18 +71,18 @@ const Footer = () => (
             </li>
             <li className="mb-2">
               <a
-                href="#"
+                href="/faq"
                 className="text-decoration-none sophisticated-footer-link"
               >
-                Contact
+                FAQs
               </a>
             </li>
             <li className="mb-2">
               <a
-                href="#"
+                href="/auth/register/serviceman"
                 className="text-decoration-none sophisticated-footer-link"
               >
-                Careers
+                Become a Provider
               </a>
             </li>
           </ul>
@@ -97,7 +97,7 @@ const Footer = () => (
           <ul className="list-unstyled">
             <li className="mb-2">
               <a
-                href="#"
+                href="/faq"
                 className="text-decoration-none sophisticated-footer-link"
               >
                 Help Center
@@ -105,18 +105,18 @@ const Footer = () => (
             </li>
             <li className="mb-2">
               <a
-                href="#"
+                href="/auth/login"
                 className="text-decoration-none sophisticated-footer-link"
               >
-                Safety
+                Login
               </a>
             </li>
             <li className="mb-2">
               <a
-                href="#"
+                href="/auth/register/client"
                 className="text-decoration-none sophisticated-footer-link"
               >
-                Terms of Service
+                Register
               </a>
             </li>
           </ul>

@@ -160,48 +160,24 @@ export default function HeroSection() {
           </div>
         </div>
 
-        {/* Enhanced Stats */}
-        <div className="row g-4 justify-content-center mb-5">
-          <div className="col-md-4">
-            <div className="card h-100 border-0 text-center p-4 bg-transparent">
-              <div className="mb-3">
-                <div
-                  className="d-inline-flex align-items-center justify-content-center bg-blue-50 rounded-3"
-                  style={{ width: "80px", height: "80px" }}
-                >
-                  <Users size={32} className="text-blue-600" />
-                </div>
-              </div>
-              <h3 className="fw-bold text-gray-900 mb-2">10,000+</h3>
-              <p className="text-gray-600 mb-0">Verified Professionals</p>
+        {/* Trust Indicators */}
+        <div className="row g-3 justify-content-center mb-5">
+          <div className="col-auto">
+            <div className="d-flex align-items-center gap-2 px-4 py-2 bg-white rounded-pill shadow-sm border border-gray-100">
+              <Shield size={20} className="text-blue-600" />
+              <span className="text-gray-700 fw-semibold" style={{ fontSize: '0.9rem' }}>Verified Professionals</span>
             </div>
           </div>
-          <div className="col-md-4">
-            <div className="card h-100 border-0 text-center p-4 bg-transparent">
-              <div className="mb-3">
-                <div
-                  className="d-inline-flex align-items-center justify-content-center bg-emerald-50 rounded-3"
-                  style={{ width: "80px", height: "80px" }}
-                >
-                  <TrendingUp size={32} className="text-emerald-600" />
-                </div>
-              </div>
-              <h3 className="fw-bold text-gray-900 mb-2">50,000+</h3>
-              <p className="text-gray-600 mb-0">Jobs Completed</p>
+          <div className="col-auto">
+            <div className="d-flex align-items-center gap-2 px-4 py-2 bg-white rounded-pill shadow-sm border border-gray-100">
+              <Clock size={20} className="text-emerald-600" />
+              <span className="text-gray-700 fw-semibold" style={{ fontSize: '0.9rem' }}>Quick Response</span>
             </div>
           </div>
-          <div className="col-md-4">
-            <div className="card h-100 border-0 text-center p-4 bg-transparent">
-              <div className="mb-3">
-                <div
-                  className="d-inline-flex align-items-center justify-content-center bg-amber-50 rounded-3"
-                  style={{ width: "80px", height: "80px" }}
-                >
-                  <Star size={32} className="text-amber-600" fill="currentColor" />
-                </div>
-              </div>
-              <h3 className="fw-bold text-gray-900 mb-2">4.9/5</h3>
-              <p className="text-gray-600 mb-0">Customer Rating</p>
+          <div className="col-auto">
+            <div className="d-flex align-items-center gap-2 px-4 py-2 bg-white rounded-pill shadow-sm border border-gray-100">
+              <CheckCircle size={20} className="text-amber-600" />
+              <span className="text-gray-700 fw-semibold" style={{ fontSize: '0.9rem' }}>Quality Guaranteed</span>
             </div>
           </div>
         </div>

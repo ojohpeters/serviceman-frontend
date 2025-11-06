@@ -67,14 +67,14 @@ const Nav = () => {
 
           {/* Navigation Links */}
           <div className="d-none d-md-flex align-items-center">
-            <a href="#" className="text-decoration-none me-4 sophisticated-nav-link">
+            <a href="/about" className="text-decoration-none me-4 sophisticated-nav-link">
               About Us
             </a>
-            <a href="#" className="text-decoration-none me-4 sophisticated-nav-link">
+            <a href="/faq" className="text-decoration-none me-4 sophisticated-nav-link">
               FAQs
             </a>
-            <a href="#" className="text-decoration-none me-4 sophisticated-nav-link">
-              Contact Us
+            <a href="/servicemen" className="text-decoration-none me-4 sophisticated-nav-link">
+              Browse Services
             </a>
             
             {/* Admin Link - Visible to everyone */}
