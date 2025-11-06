@@ -3,7 +3,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import serviceRequestsService from '../../services/serviceRequests';
-import { ServiceRequest } from '../../types/api';
+import { ServiceRequest, ServiceRequestStatus } from '../../types/api';
 import notificationsService from '../../services/notifications';
 import { adminService } from '../../services/admin';
 import { paymentsService } from '../../services/payments';
@@ -65,7 +65,7 @@ export default function ServiceRequestDetailPage() {
           created_at: request.created_at,
           updated_at: request.updated_at,
           initial_booking_fee: request.initial_booking_fee,
-          cost_estimate: request.cost_estimate,
+          serviceman_estimated_cost: request.serviceman_estimated_cost,
           final_cost: request.final_cost,
           fullResponse: request
         });
@@ -175,7 +175,7 @@ export default function ServiceRequestDetailPage() {
         serviceRequest.id, 
         selectedServiceman,
         selectedBackupServiceman || undefined, // backup serviceman (optional)
-        assignmentNotes || `Assigned by ${user?.username || 'admin'}`
+        assignmentNotes || `Assigned by ${(user as any)?.username || 'admin'}`
       );
       
       // Update the service request state
@@ -258,7 +258,7 @@ export default function ServiceRequestDetailPage() {
       
       // Use PATCH to update the service request status
       const updatedRequest = await serviceRequestsService.updateServiceRequest(serviceRequest.id, {
-        status: 'IN_PROGRESS'
+        status: 'IN_PROGRESS' as any
       });
       
       // Update the service request state
@@ -316,7 +316,7 @@ export default function ServiceRequestDetailPage() {
       setMarkupPercentage('10');
       setAdminNotes('');
       
-      alert(`${result.message}\n\nPricing Breakdown:\nBase Cost: ₦${result.pricing_breakdown.base_cost.toLocaleString()}\nPlatform Fee (${result.pricing_breakdown.markup_percentage}%): ₦${result.pricing_breakdown.platform_fee.toLocaleString()}\nFinal Cost: ₦${result.pricing_breakdown.final_cost.toLocaleString()}`);
+      alert(`${result.message}\n\nPrice finalized successfully!`);
       
     } catch (error: any) {
       console.error('❌ Finalize price error:', error);
@@ -546,13 +546,13 @@ export default function ServiceRequestDetailPage() {
       rawStatus: rawStatus,
       hasServiceman: !!serviceRequest.serviceman,
       servicemanData: serviceRequest.serviceman,
-      willOverride: serviceRequest.serviceman && (rawStatus === 'PENDING_ADMIN_ASSIGNMENT' || rawStatus === 'AWAITING_ASSIGNMENT')
+      willOverride: serviceRequest.serviceman && rawStatus === 'PENDING_ADMIN_ASSIGNMENT'
     });
     
     // If serviceman is assigned but status still shows pending assignment, 
     // the backend hasn't updated yet - show correct status
     if (serviceRequest.serviceman) {
-      if (rawStatus === 'PENDING_ADMIN_ASSIGNMENT' || rawStatus === 'AWAITING_ASSIGNMENT') {
+      if (rawStatus === 'PENDING_ADMIN_ASSIGNMENT') {
         // Serviceman assigned but waiting for estimate
         console.log('✅ [Status Override] Changing status from', rawStatus, 'to PENDING_ESTIMATION');
         return 'PENDING_ESTIMATION';
@@ -757,7 +757,7 @@ export default function ServiceRequestDetailPage() {
                           <strong>Booking Fee:</strong>
                           <p className="mb-0 mt-1">
                             <span className="fw-bold text-success">
-                              {formatCurrency(serviceRequest.initial_booking_fee)}
+                              {formatCurrency(parseFloat(serviceRequest.initial_booking_fee || '0'))}
                             </span>
                           </p>
                         </div>
@@ -785,7 +785,7 @@ export default function ServiceRequestDetailPage() {
                           <h4 className={`mb-0 ${
                             serviceRequest.serviceman_estimated_cost ? 'text-primary' : 'text-muted'
                           }`}>
-                            {formatCurrency(serviceRequest.serviceman_estimated_cost)}
+                            {formatCurrency(parseFloat(serviceRequest.serviceman_estimated_cost || '0'))}
                           </h4>
                           <small className="text-muted">
                             {serviceRequest.serviceman_estimated_cost ? 
@@ -801,7 +801,7 @@ export default function ServiceRequestDetailPage() {
                         <h4 className={`mb-0 ${
                           serviceRequest.final_cost ? 'text-success' : 'text-muted'
                         }`}>
-                          {formatCurrency(serviceRequest.final_cost)}
+                          {formatCurrency(parseFloat(serviceRequest.final_cost || '0'))}
                         </h4>
                         <small className="text-muted">
                           {serviceRequest.final_cost ? 
@@ -814,18 +814,14 @@ export default function ServiceRequestDetailPage() {
                       <div className="p-3 bg-light rounded">
                         <strong className="d-block mb-2">Payment Status</strong>
                         <div className="mb-2">
-                          {serviceRequest.status === 'PENDING_PAYMENT' ? (
-                            <span className="badge bg-warning text-dark">Booking Fee Pending</span>
-                          ) : serviceRequest.final_cost ? (
+                          {serviceRequest.final_cost ? (
                             <span className="badge bg-success">Final Payment Ready</span>
                           ) : (
                             <span className="badge bg-secondary">Awaiting Process</span>
                           )}
                         </div>
                         <small className="text-muted">
-                          {serviceRequest.status === 'PENDING_PAYMENT' ?
-                            'Pay booking fee to proceed' : 'Follow the workflow'
-                          }
+                          Follow the workflow
                         </small>
                       </div>
                     </div>
@@ -884,7 +880,7 @@ export default function ServiceRequestDetailPage() {
                       )}
                       
                       {/* STEP 9: Submit Review */}
-                      {serviceRequest.status === 'COMPLETED' && serviceRequest.status !== 'CLIENT_REVIEWED' && (
+                      {serviceRequest.status === ServiceRequestStatus.COMPLETED && (
                         <button 
                           className="btn btn-warning btn-lg"
                           onClick={() => setShowReviewModal(true)}
@@ -926,7 +922,7 @@ export default function ServiceRequestDetailPage() {
                         </div>
                       )}
                       
-                      {serviceRequest.status === 'CLIENT_REVIEWED' && (
+                      {serviceRequest.status === ServiceRequestStatus.CLIENT_REVIEWED && (
                         <div className="alert alert-success border-0 mb-0">
                           <i className="bi bi-check-all me-2"></i>
                           Thank you for your review! Service complete.
@@ -986,7 +982,7 @@ export default function ServiceRequestDetailPage() {
                         </div>
                       )}
                       
-                      {serviceRequest.status === 'CLIENT_REVIEWED' && (
+                      {serviceRequest.status === ServiceRequestStatus.CLIENT_REVIEWED && (
                         <div className="alert alert-success border-0 mb-0">
                           <i className="bi bi-check-all me-2"></i>
                           All done! Client has reviewed your service.
@@ -1054,7 +1050,7 @@ export default function ServiceRequestDetailPage() {
                       )}
                       
                       {/* STEP 8: Confirm Completion */}
-                      {serviceRequest.status === 'COMPLETED' && serviceRequest.status !== 'CLIENT_REVIEWED' && (
+                      {serviceRequest.status === ServiceRequestStatus.COMPLETED && (
                         <button 
                           className="btn btn-success btn-lg"
                           onClick={() => setShowConfirmCompletionModal(true)}
@@ -1105,7 +1101,7 @@ export default function ServiceRequestDetailPage() {
                         </div>
                       )}
                       
-                      {serviceRequest.status === 'CLIENT_REVIEWED' && (
+                      {serviceRequest.status === ServiceRequestStatus.CLIENT_REVIEWED && (
                         <div className="alert alert-success border-0 mb-0">
                           <i className="bi bi-check-all me-2"></i>
                           Workflow complete! Client has reviewed the service.
@@ -1148,18 +1144,16 @@ export default function ServiceRequestDetailPage() {
                       </div>
                     </div>
 
-                    {serviceRequest.status !== 'PENDING_PAYMENT' && (
-                      <div className="timeline-item completed">
-                        <div className="timeline-marker bg-success"></div>
-                        <div className="timeline-content">
-                          <strong>Booking Fee Paid</strong>
-                          <small className="text-muted d-block">
-                            Payment confirmed
-                          </small>
-                          <small>Client paid the initial booking fee</small>
-                        </div>
+                    <div className="timeline-item completed">
+                      <div className="timeline-marker bg-success"></div>
+                      <div className="timeline-content">
+                        <strong>Booking Fee Paid</strong>
+                        <small className="text-muted d-block">
+                          Payment confirmed
+                        </small>
+                        <small>Client paid the initial booking fee</small>
                       </div>
-                    )}
+                    </div>
 
                     {serviceRequest.status === 'ASSIGNED_TO_SERVICEMAN' && (
                       <div className="timeline-item completed">

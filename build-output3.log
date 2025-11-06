@@ -1,0 +1,29 @@
+
+> frontend@0.1.0 build
+> next build
+
+ ⚠ Warning: Next.js inferred your workspace root, but it may not be correct.
+ We detected multiple lockfiles and selected the directory of /home/chegbe/Desktop/Projects/package-lock.json as the root directory.
+ To silence this warning, set `outputFileTracingRoot` in your Next.js config, or consider removing one of the lockfiles if it's not needed.
+   See https://nextjs.org/docs/app/api-reference/config/next-config-js/output#caveats for more information.
+ Detected additional lockfiles: 
+   * /home/chegbe/Desktop/Projects/Frontend_serviceman/frontend/package-lock.json
+
+   ▲ Next.js 15.5.3
+
+   Creating an optimized production build ...
+ ✓ Compiled successfully in 4.3s
+   Linting and checking validity of types ...
+Failed to compile.
+
+./src/app/service-requests/[id]/page.tsx:817:28
+Type error: This comparison appears to be unintentional because the types 'ServiceRequestStatus' and '"PENDING_PAYMENT"' have no overlap.
+
+[0m [90m 815 |[39m                         [33m<[39m[33mstrong[39m className[33m=[39m[32m"d-block mb-2"[39m[33m>[39m[33mPayment[39m [33mStatus[39m[33m<[39m[33m/[39m[33mstrong[39m[33m>[39m
+ [90m 816 |[39m                         [33m<[39m[33mdiv[39m className[33m=[39m[32m"mb-2"[39m[33m>[39m
+[31m[1m>[22m[39m[90m 817 |[39m                           {serviceRequest[33m.[39mstatus [33m===[39m [32m'PENDING_PAYMENT'[39m [33m?[39m (
+ [90m     |[39m                            [31m[1m^[22m[39m
+ [90m 818 |[39m                             [33m<[39m[33mspan[39m className[33m=[39m[32m"badge bg-warning text-dark"[39m[33m>[39m[33mBooking[39m [33mFee[39m [33mPending[39m[33m<[39m[33m/[39m[33mspan[39m[33m>[39m
+ [90m 819 |[39m                           ) [33m:[39m serviceRequest[33m.[39mfinal_cost [33m?[39m (
+ [90m 820 |[39m                             [33m<[39m[33mspan[39m className[33m=[39m[32m"badge bg-success"[39m[33m>[39m[33mFinal[39m [33mPayment[39m [33mReady[39m[33m<[39m[33m/[39m[33mspan[39m[33m>[39m[0m
+Next.js build worker exited with code: 1 and signal: null

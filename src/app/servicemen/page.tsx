@@ -173,7 +173,7 @@ export default function ServicemenListPage() {
           ) : (
             <div className="row">
               {servicemen.map((serviceman: ServicemanProfile) => (
-                <div key={serviceman.user} className="col-md-6 col-lg-4 mb-4">
+                <div key={serviceman.id} className="col-md-6 col-lg-4 mb-4">
                   <div className="card border-0 shadow-sm h-100">
                     <div className="card-body">
                       <div className="d-flex justify-content-between align-items-start mb-3">

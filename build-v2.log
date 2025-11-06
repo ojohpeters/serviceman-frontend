@@ -1,0 +1,30 @@
+
+> frontend@0.1.0 build
+> next build
+
+ ⚠ Warning: Next.js inferred your workspace root, but it may not be correct.
+ We detected multiple lockfiles and selected the directory of /home/chegbe/Desktop/Projects/package-lock.json as the root directory.
+ To silence this warning, set `outputFileTracingRoot` in your Next.js config, or consider removing one of the lockfiles if it's not needed.
+   See https://nextjs.org/docs/app/api-reference/config/next-config-js/output#caveats for more information.
+ Detected additional lockfiles: 
+   * /home/chegbe/Desktop/Projects/Frontend_serviceman/frontend/package-lock.json
+
+   ▲ Next.js 15.5.3
+
+   Creating an optimized production build ...
+ ✓ Compiled successfully in 4.3s
+   Linting and checking validity of types ...
+Failed to compile.
+
+./src/app/servicemen/page.tsx:176:22
+Type error: Type 'number | User' is not assignable to type 'Key | null | undefined'.
+  Type 'User' is not assignable to type 'Key | null | undefined'.
+
+[0m [90m 174 |[39m             [33m<[39m[33mdiv[39m className[33m=[39m[32m"row"[39m[33m>[39m
+ [90m 175 |[39m               {servicemen[33m.[39mmap((serviceman[33m:[39m [33mServicemanProfile[39m) [33m=>[39m (
+[31m[1m>[22m[39m[90m 176 |[39m                 [33m<[39m[33mdiv[39m key[33m=[39m{serviceman[33m.[39muser} className[33m=[39m[32m"col-md-6 col-lg-4 mb-4"[39m[33m>[39m
+ [90m     |[39m                      [31m[1m^[22m[39m
+ [90m 177 |[39m                   [33m<[39m[33mdiv[39m className[33m=[39m[32m"card border-0 shadow-sm h-100"[39m[33m>[39m
+ [90m 178 |[39m                     [33m<[39m[33mdiv[39m className[33m=[39m[32m"card-body"[39m[33m>[39m
+ [90m 179 |[39m                       [33m<[39m[33mdiv[39m className[33m=[39m[32m"d-flex justify-content-between align-items-start mb-3"[39m[33m>[39m[0m
+Next.js build worker exited with code: 1 and signal: null

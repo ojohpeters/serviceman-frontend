@@ -1,0 +1,30 @@
+
+> frontend@0.1.0 build
+> next build
+
+ ⚠ Warning: Next.js inferred your workspace root, but it may not be correct.
+ We detected multiple lockfiles and selected the directory of /home/chegbe/Desktop/Projects/package-lock.json as the root directory.
+ To silence this warning, set `outputFileTracingRoot` in your Next.js config, or consider removing one of the lockfiles if it's not needed.
+   See https://nextjs.org/docs/app/api-reference/config/next-config-js/output#caveats for more information.
+ Detected additional lockfiles: 
+   * /home/chegbe/Desktop/Projects/Frontend_serviceman/frontend/package-lock.json
+
+   ▲ Next.js 15.5.3
+
+   Creating an optimized production build ...
+ ✓ Compiled successfully in 4.9s
+   Linting and checking validity of types ...
+Failed to compile.
+
+./src/app/service-requests/[id]/page.tsx:788:45
+Type error: Argument of type 'string | null' is not assignable to parameter of type 'number | undefined'.
+  Type 'null' is not assignable to type 'number | undefined'.
+
+[0m [90m 786 |[39m [32m                            serviceRequest.serviceman_estimated_cost ? 'text-primary' : 'text-muted'[39m
+ [90m 787 |[39m [32m                          }`[39m}[33m>[39m
+[31m[1m>[22m[39m[90m 788 |[39m                             {formatCurrency(serviceRequest[33m.[39mserviceman_estimated_cost)}
+ [90m     |[39m                                             [31m[1m^[22m[39m
+ [90m 789 |[39m                           [33m<[39m[33m/[39m[33mh4[39m[33m>[39m
+ [90m 790 |[39m                           [33m<[39m[33msmall[39m className[33m=[39m[32m"text-muted"[39m[33m>[39m
+ [90m 791 |[39m                             {serviceRequest[33m.[39mserviceman_estimated_cost [33m?[39m [0m
+Next.js build worker exited with code: 1 and signal: null

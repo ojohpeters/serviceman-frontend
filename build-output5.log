@@ -1,0 +1,29 @@
+
+> frontend@0.1.0 build
+> next build
+
+ ⚠ Warning: Next.js inferred your workspace root, but it may not be correct.
+ We detected multiple lockfiles and selected the directory of /home/chegbe/Desktop/Projects/package-lock.json as the root directory.
+ To silence this warning, set `outputFileTracingRoot` in your Next.js config, or consider removing one of the lockfiles if it's not needed.
+   See https://nextjs.org/docs/app/api-reference/config/next-config-js/output#caveats for more information.
+ Detected additional lockfiles: 
+   * /home/chegbe/Desktop/Projects/Frontend_serviceman/frontend/package-lock.json
+
+   ▲ Next.js 15.5.3
+
+   Creating an optimized production build ...
+ ✓ Compiled successfully in 4.2s
+   Linting and checking validity of types ...
+Failed to compile.
+
+./src/app/service-requests/[id]/page.tsx:883:50
+Type error: Cannot find name 'ServiceRequestStatus'. Did you mean 'serviceRequest'?
+
+[0m [90m 881 |[39m                       
+ [90m 882 |[39m                       {[90m/* STEP 9: Submit Review */[39m}
+[31m[1m>[22m[39m[90m 883 |[39m                       {serviceRequest[33m.[39mstatus [33m===[39m [33mServiceRequestStatus[39m[33m.[39m[33mCOMPLETED[39m [33m&&[39m (
+ [90m     |[39m                                                  [31m[1m^[22m[39m
+ [90m 884 |[39m                         [33m<[39m[33mbutton[39m 
+ [90m 885 |[39m                           className[33m=[39m[32m"btn btn-warning btn-lg"[39m
+ [90m 886 |[39m                           onClick[33m=[39m{() [33m=>[39m setShowReviewModal([36mtrue[39m)}[0m
+Next.js build worker exited with code: 1 and signal: null
