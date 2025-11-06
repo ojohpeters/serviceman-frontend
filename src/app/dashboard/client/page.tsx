@@ -148,7 +148,7 @@ export default function ClientDashboardPage(): React.ReactElement {
             {/* Main dashboard content */}
             <section
               className="flex-grow-1 d-flex flex-column justify-content-start align-items-stretch p-4 position-relative"
-              style={{ minHeight: "calc(100vh - 80px)", overflowY: "auto" }}
+              style={{ minHeight: "calc(100vh - 80px)", overflowY: "auto", paddingBottom: "100px" }}
             >
               <div className="position-relative z-2">
                 {/* Dashboard Header with Refresh Button */}

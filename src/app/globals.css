@@ -9,6 +9,17 @@ html, body {
   overflow-wrap: break-word;
 }
 
+/* Ensure content doesn't get hidden by fixed footer on mobile */
+main, .main-content, section {
+  padding-bottom: 80px !important;
+}
+
+@media (max-width: 768px) {
+  main, .main-content, section {
+    padding-bottom: 120px !important;
+  }
+}
+
 /* Color variables for Bootstrap customizations */
 :root {
   --bs-primary: #3454fa;
