@@ -86,10 +86,10 @@ export default function HeroSection() {
 
         {/* Enhanced Search Bar */}
         <div
-          className={`mx-auto mb-6 transition-all duration-300 ${
+          className={`mx-auto transition-all duration-300 ${
             isSearchFocused ? "scale-105" : ""
           }`}
-          style={{ maxWidth: "600px" }}
+          style={{ maxWidth: "600px", marginBottom: '3rem' }}
         >
           <div className="position-relative">
             <div className="input-group input-group-lg shadow-lg rounded-pill overflow-hidden border-0">

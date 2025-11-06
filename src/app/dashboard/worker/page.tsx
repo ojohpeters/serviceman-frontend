@@ -7,7 +7,6 @@ import WorkerSidebar from "../../components/workerdashboard/WorkerSidebar";
 import DashboardHeader from "../../components/clientdashboard/DashboardHeader";
 import WorkerStats from "../../components/workerdashboard/WorkerStats";
 import JobRequests from "../../components/workerdashboard/JobRequests";
-import JobHistory from "../../components/workerdashboard/JobHistory";
 import ServicemanProfileEdit from '../../components/profile/ServicemanProfileEdit';
 import ServicemanProfileCompletion from "../../components/workerdashboard/ServicemanProfileCompletion";
 import { useAuth } from "../../contexts/AuthContext";
@@ -508,8 +507,6 @@ export default function WorkerDashboardPage(): React.ReactElement {
                   loading={dataLoading}
                 />
 
-                {/* Job History */}
-                <JobHistory className="mt-4" />
               </div>
             </section>
           </main>

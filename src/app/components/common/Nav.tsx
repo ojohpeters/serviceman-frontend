@@ -1,15 +1,17 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import { useAuth } from "../../contexts/AuthContext";
 import { useUser } from "../../contexts/UserContext";
 import { useAdmin } from "../../hooks/useAdmin"; 
+import { Menu, X } from "lucide-react";
 
 const Nav = () => {
   const { isAuthenticated, logout } = useAuth();
   const { user, loading } = useUser();
   const { isAdmin } = useAdmin();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const handleLogout = () => {
     logout();
@@ -83,8 +85,18 @@ const Nav = () => {
             </Link>
           </div>
 
+          {/* Mobile Menu Toggle */}
+          <div className="d-md-none">
+            <button 
+              className="btn btn-outline-secondary"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            >
+              {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+            </button>
+          </div>
+
           {/* User Actions */}
-          <div className="d-flex align-items-center">
+          <div className="d-none d-md-flex align-items-center">
             {isAuthenticated ? (
               <div className="d-flex align-items-center gap-3">
                 {/* Single Dynamic Dashboard Button */}
@@ -183,6 +195,56 @@ const Nav = () => {
             )}
           </div>
         </div>
+
+        {/* Mobile Menu Dropdown */}
+        {mobileMenuOpen && (
+          <div className="d-md-none border-top bg-white">
+            <div className="container-fluid py-3">
+              {/* Navigation Links */}
+              <div className="mb-3">
+                <a href="/about" className="d-block py-2 text-decoration-none text-dark">
+                  About Us
+                </a>
+                <a href="/faq" className="d-block py-2 text-decoration-none text-dark">
+                  FAQs
+                </a>
+                <a href="/servicemen" className="d-block py-2 text-decoration-none text-dark">
+                  Browse Services
+                </a>
+              </div>
+
+              {/* User Actions for Mobile */}
+              {isAuthenticated ? (
+                <div>
+                  <Link href={dashboardLink} className="btn btn-primary w-100 mb-2">
+                    {isAdmin ? 'Admin Panel' : 'Dashboard'}
+                  </Link>
+                  <Link href="/profile" className="btn btn-outline-secondary w-100 mb-2">
+                    Profile
+                  </Link>
+                  <Link href="/notifications" className="btn btn-outline-secondary w-100 mb-2">
+                    Notifications
+                  </Link>
+                  <Link href="/settings" className="btn btn-outline-secondary w-100 mb-2">
+                    Settings
+                  </Link>
+                  <button onClick={handleLogout} className="btn btn-outline-danger w-100">
+                    Logout
+                  </button>
+                </div>
+              ) : (
+                <div>
+                  <Link href="/auth/login" className="btn btn-outline-secondary w-100 mb-2">
+                    Sign In
+                  </Link>
+                  <Link href="/auth/register/client" className="btn btn-primary w-100">
+                    Get Started
+                  </Link>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </nav>
   );
