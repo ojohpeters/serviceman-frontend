@@ -848,22 +848,26 @@ export default function ServiceRequestDetailPage() {
                                       <small className="text-muted d-block">Name:</small>
                                       <strong className="text-break">{servicemanName}</strong>
                                     </div>
-                                    {servicemanEmail && (
-                                      <div className="mb-2">
-                                        <small className="text-muted d-block">Email:</small>
+                                    <div className="mb-2">
+                                      <small className="text-muted d-block">Email:</small>
+                                      {servicemanEmail ? (
                                         <a href={`mailto:${servicemanEmail}`} className="text-decoration-none text-break d-block" style={{ fontSize: '0.9rem' }}>
                                           {servicemanEmail}
                                         </a>
-                                      </div>
-                                    )}
-                                    {servicemanPhone && (
-                                      <div className="mb-2">
-                                        <small className="text-muted d-block">Phone:</small>
+                                      ) : (
+                                        <span className="text-muted" style={{ fontSize: '0.9rem' }}>Not provided</span>
+                                      )}
+                                    </div>
+                                    <div className="mb-2">
+                                      <small className="text-muted d-block">Phone Number:</small>
+                                      {servicemanPhone ? (
                                         <a href={`tel:${servicemanPhone}`} className="text-decoration-none">
                                           {servicemanPhone}
                                         </a>
-                                      </div>
-                                    )}
+                                      ) : (
+                                        <span className="text-muted" style={{ fontSize: '0.9rem' }}>Not provided</span>
+                                      )}
+                                    </div>
                                     {serviceman.rating && (
                                       <div className="mb-0">
                                         <small className="text-muted d-block">Rating:</small>
@@ -901,22 +905,26 @@ export default function ServiceRequestDetailPage() {
                                       <small className="text-muted d-block">Name:</small>
                                       <strong className="text-break">{backupName}</strong>
                                     </div>
-                                    {backupEmail && (
-                                      <div className="mb-2">
-                                        <small className="text-muted d-block">Email:</small>
+                                    <div className="mb-2">
+                                      <small className="text-muted d-block">Email:</small>
+                                      {backupEmail ? (
                                         <a href={`mailto:${backupEmail}`} className="text-decoration-none text-break d-block" style={{ fontSize: '0.9rem' }}>
                                           {backupEmail}
                                         </a>
-                                      </div>
-                                    )}
-                                    {backupPhone && (
-                                      <div className="mb-2">
-                                        <small className="text-muted d-block">Phone:</small>
+                                      ) : (
+                                        <span className="text-muted" style={{ fontSize: '0.9rem' }}>Not provided</span>
+                                      )}
+                                    </div>
+                                    <div className="mb-2">
+                                      <small className="text-muted d-block">Phone Number:</small>
+                                      {backupPhone ? (
                                         <a href={`tel:${backupPhone}`} className="text-decoration-none">
                                           {backupPhone}
                                         </a>
-                                      </div>
-                                    )}
+                                      ) : (
+                                        <span className="text-muted" style={{ fontSize: '0.9rem' }}>Not provided</span>
+                                      )}
+                                    </div>
                                     {backup.rating && (
                                       <div className="mb-0">
                                         <small className="text-muted d-block">Rating:</small>
@@ -955,15 +963,17 @@ export default function ServiceRequestDetailPage() {
                                   <small className="text-muted d-block">Name:</small>
                                   <strong className="text-break">{servicemanName}</strong>
                                 </div>
-                                {servicemanPhone && (
-                                  <div className="mb-2">
-                                    <small className="text-muted d-block">Contact:</small>
+                                <div className="mb-2">
+                                  <small className="text-muted d-block">Phone Number:</small>
+                                  {servicemanPhone ? (
                                     <a href={`tel:${servicemanPhone}`} className="btn btn-sm btn-success">
                                       <i className="bi bi-telephone me-1"></i>
-                                      Call Serviceman
+                                      {servicemanPhone}
                                     </a>
-                                  </div>
-                                )}
+                                  ) : (
+                                    <span className="text-muted" style={{ fontSize: '0.9rem' }}>Not provided</span>
+                                  )}
+                                </div>
                                 {serviceman.rating && (
                                   <div className="mb-0">
                                     <small className="text-muted d-block">Rating:</small>
@@ -1002,18 +1012,20 @@ export default function ServiceRequestDetailPage() {
                                   <strong className="text-break">{clientName}</strong>
                                 </div>
                                 <div className="mb-2">
-                                  <small className="text-muted d-block">Address:</small>
+                                  <small className="text-muted d-block">Service Address:</small>
                                   <span className="text-break" style={{ fontSize: '0.9rem' }}>{serviceRequest.client_address}</span>
                                 </div>
-                                {clientPhone && (
-                                  <div className="mb-0">
-                                    <small className="text-muted d-block">Contact:</small>
+                                <div className="mb-0">
+                                  <small className="text-muted d-block">Phone Number:</small>
+                                  {clientPhone ? (
                                     <a href={`tel:${clientPhone}`} className="btn btn-sm btn-primary">
                                       <i className="bi bi-telephone me-1"></i>
-                                      Call Client
+                                      {clientPhone}
                                     </a>
-                                  </div>
-                                )}
+                                  ) : (
+                                    <span className="text-muted" style={{ fontSize: '0.9rem' }}>Not provided</span>
+                                  )}
+                                </div>
                               </>
                             );
                           })()}
