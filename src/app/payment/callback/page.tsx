@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 /**
@@ -12,7 +12,7 @@ import { useRouter, useSearchParams } from "next/navigation";
  * Backend redirects to: /payment/callback?reference=...
  * This page redirects to the actual handler at /payment/booking-callback
  */
-export default function PaymentCallback() {
+function PaymentCallbackContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const reference = searchParams.get("reference") || searchParams.get("trxref");
@@ -46,6 +46,20 @@ export default function PaymentCallback() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function PaymentCallback() {
+  return (
+    <Suspense fallback={
+      <div className="min-vh-100 d-flex align-items-center justify-content-center bg-light">
+        <div className="spinner-border text-primary" role="status">
+          <span className="visually-hidden">Loading...</span>
+        </div>
+      </div>
+    }>
+      <PaymentCallbackContent />
+    </Suspense>
   );
 }
 

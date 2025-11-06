@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { paymentsService } from "../../services/payments";
 import { serviceRequestsService } from "../../services/serviceRequests";
 import type { CreateServiceRequestData } from "../../types/api";
 
-export default function BookingPaymentCallback() {
+function BookingPaymentCallbackContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const reference = searchParams.get("reference");
@@ -226,6 +226,20 @@ export default function BookingPaymentCallback() {
         />
       </div>
     </div>
+  );
+}
+
+export default function BookingPaymentCallback() {
+  return (
+    <Suspense fallback={
+      <div className="min-vh-100 d-flex align-items-center justify-content-center bg-light">
+        <div className="spinner-border text-primary" role="status">
+          <span className="visually-hidden">Loading...</span>
+        </div>
+      </div>
+    }>
+      <BookingPaymentCallbackContent />
+    </Suspense>
   );
 }
 
