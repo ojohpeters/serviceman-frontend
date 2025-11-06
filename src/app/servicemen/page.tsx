@@ -53,7 +53,7 @@ function ServicemenContent() {
       const lastName = (user?.last_name || '').toLowerCase();
       
       // Extract category
-      const categoryName = typeof serviceman.category === 'object' 
+      const categoryName = (typeof serviceman.category === 'object' && serviceman.category !== null)
         ? (serviceman.category.name || '').toLowerCase() 
         : '';
       
