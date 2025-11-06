@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect, Suspense } from 'react';
+import React, { useState, useEffect, useMemo, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Nav from '../components/common/Nav';
 import SecondFooter from '../components/common/SecondFooter';
@@ -26,7 +26,54 @@ function ServicemenContent() {
     }
   }, [searchParams]);
 
-  const { servicemen, statistics, loading, error } = useServicemen(filters);
+  // Fetch servicemen without search filter (let client-side handle search)
+  const backendFilters = {
+    category: filters.category,
+    is_available: filters.is_available,
+    min_rating: filters.min_rating,
+    ordering: filters.ordering
+  };
+
+  const { servicemen: allServicemen, statistics, loading, error } = useServicemen(backendFilters);
+
+  // Client-side filtering for partial search matching
+  const servicemen = useMemo(() => {
+    if (!filters.search || !allServicemen.length) {
+      return allServicemen;
+    }
+
+    const searchLower = filters.search.toLowerCase().trim();
+    
+    return allServicemen.filter((serviceman: ServicemanProfile) => {
+      // Extract user details
+      const user = typeof serviceman.user === 'object' ? serviceman.user : null;
+      const fullName = ((user as any)?.full_name || '').toLowerCase();
+      const username = (user?.username || '').toLowerCase();
+      const firstName = (user?.first_name || '').toLowerCase();
+      const lastName = (user?.last_name || '').toLowerCase();
+      
+      // Extract category
+      const categoryName = typeof serviceman.category === 'object' 
+        ? (serviceman.category.name || '').toLowerCase() 
+        : '';
+      
+      // Extract skills
+      const skillNames = (serviceman.skills || [])
+        .map((skill: any) => typeof skill === 'object' ? (skill.name || '').toLowerCase() : '')
+        .join(' ');
+      
+      const bio = (serviceman.bio || '').toLowerCase();
+
+      // Check if search term is found in any field (partial match)
+      return fullName.includes(searchLower) ||
+             username.includes(searchLower) ||
+             firstName.includes(searchLower) ||
+             lastName.includes(searchLower) ||
+             categoryName.includes(searchLower) ||
+             skillNames.includes(searchLower) ||
+             bio.includes(searchLower);
+    });
+  }, [allServicemen, filters.search]);
 
   const handleFilterChange = (key: string, value: any) => {
     setFilters(prev => ({ ...prev, [key]: value }));
@@ -181,7 +228,7 @@ function ServicemenContent() {
                     <>
                       No results for "<strong>{filters.search}</strong>". 
                       <br />
-                      <small>Note: Search looks for exact or partial matches in serviceman names. For services like "Mechanic" or "Plumber", try browsing by category instead.</small>
+                      <small>We searched across names, categories, skills, and bios. Try a different keyword or browse by category.</small>
                     </>
                   )}
                   {!filters.search && "Try adjusting your filters or browse all servicemen."}
