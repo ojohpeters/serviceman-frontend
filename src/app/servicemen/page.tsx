@@ -173,14 +173,14 @@ export default function ServicemenListPage() {
           ) : (
             <div className="row">
               {servicemen.map((serviceman: ServicemanProfile) => (
-                <div key={serviceman.id} className="col-md-6 col-lg-4 mb-4">
+                <div key={typeof serviceman.user === 'object' ? serviceman.user.id : serviceman.user} className="col-md-6 col-lg-4 mb-4">
                   <div className="card border-0 shadow-sm h-100">
                     <div className="card-body">
                       <div className="d-flex justify-content-between align-items-start mb-3">
                         <div className="flex-grow-1" style={{ minWidth: 0 }}>
                           <h5 className="mb-1 text-truncate">
                             {typeof serviceman.user === 'object' 
-                              ? serviceman.user.full_name || serviceman.user.username 
+                              ? (serviceman.user as any).full_name || serviceman.user.username 
                               : `Serviceman #${serviceman.user}`}
                           </h5>
                           {serviceman.category && (

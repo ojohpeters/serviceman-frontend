@@ -1,0 +1,32 @@
+
+> frontend@0.1.0 build
+> next build
+
+ ⚠ Warning: Next.js inferred your workspace root, but it may not be correct.
+ We detected multiple lockfiles and selected the directory of /home/chegbe/Desktop/Projects/package-lock.json as the root directory.
+ To silence this warning, set `outputFileTracingRoot` in your Next.js config, or consider removing one of the lockfiles if it's not needed.
+   See https://nextjs.org/docs/app/api-reference/config/next-config-js/output#caveats for more information.
+ Detected additional lockfiles: 
+   * /home/chegbe/Desktop/Projects/Frontend_serviceman/frontend/package-lock.json
+
+   ▲ Next.js 15.5.3
+
+   Creating an optimized production build ...
+ ✓ Compiled successfully in 4.0s
+   Linting and checking validity of types ...
+Failed to compile.
+
+./src/app/services/api.ts:233:1
+Type error: Type '<T = any, R = AxiosResponse<T, any, {}>, D = any>(config: AxiosRequestConfig<D>) => Promise<unknown>' is not assignable to type '<T = any, R = AxiosResponse<T, any, {}>, D = any>(config: AxiosRequestConfig<D>) => Promise<R>'.
+  Type 'Promise<unknown>' is not assignable to type 'Promise<R>'.
+    Type 'unknown' is not assignable to type 'R'.
+      'R' could be instantiated with an arbitrary type which could be unrelated to 'unknown'.
+
+[0m [90m 231 |[39m [90m// Add circuit breaker check to all requests[39m
+ [90m 232 |[39m [36mconst[39m originalRequest [33m=[39m api[33m.[39mrequest[33m;[39m
+[31m[1m>[22m[39m[90m 233 |[39m api[33m.[39mrequest [33m=[39m [36mfunction[39m(config) {
+ [90m     |[39m [31m[1m^[22m[39m
+ [90m 234 |[39m   [36mconst[39m now [33m=[39m [33mDate[39m[33m.[39mnow()[33m;[39m
+ [90m 235 |[39m   
+ [90m 236 |[39m   [90m// If we've had too many consecutive failures recently, block requests[39m[0m
+Next.js build worker exited with code: 1 and signal: null

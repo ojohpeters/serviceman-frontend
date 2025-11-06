@@ -1,0 +1,45 @@
+
+> frontend@0.1.0 build
+> next build
+
+ ⚠ Warning: Next.js inferred your workspace root, but it may not be correct.
+ We detected multiple lockfiles and selected the directory of /home/chegbe/Desktop/Projects/package-lock.json as the root directory.
+ To silence this warning, set `outputFileTracingRoot` in your Next.js config, or consider removing one of the lockfiles if it's not needed.
+   See https://nextjs.org/docs/app/api-reference/config/next-config-js/output#caveats for more information.
+ Detected additional lockfiles: 
+   * /home/chegbe/Desktop/Projects/Frontend_serviceman/frontend/package-lock.json
+
+   ▲ Next.js 15.5.3
+
+   Creating an optimized production build ...
+ ✓ Compiled successfully in 4.6s
+   Linting and checking validity of types ...
+   Collecting page data ...
+   Generating static pages (0/28) ...
+ ⨯ useSearchParams() should be wrapped in a suspense boundary at page "/dashboard/client". Read more: https://nextjs.org/docs/messages/missing-suspense-with-csr-bailout
+    at g (/home/chegbe/Desktop/Projects/Frontend_serviceman/frontend/.next/server/chunks/825.js:3:126921)
+    at m (/home/chegbe/Desktop/Projects/Frontend_serviceman/frontend/.next/server/chunks/825.js:11:162390)
+    at i (/home/chegbe/Desktop/Projects/Frontend_serviceman/frontend/.next/server/chunks/294.js:1:31964)
+    at n3 (/home/chegbe/Desktop/Projects/Frontend_serviceman/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:2:82831)
+    at n6 (/home/chegbe/Desktop/Projects/Frontend_serviceman/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:2:84601)
+    at n6 (/home/chegbe/Desktop/Projects/Frontend_serviceman/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:2:101560)
+    at n5 (/home/chegbe/Desktop/Projects/Frontend_serviceman/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:2:104801)
+    at n7 (/home/chegbe/Desktop/Projects/Frontend_serviceman/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:2:102219)
+    at ia (/home/chegbe/Desktop/Projects/Frontend_serviceman/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:2:108211)
+    at ie (/home/chegbe/Desktop/Projects/Frontend_serviceman/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:2:106833)
+Error occurred prerendering page "/dashboard/client". Read more: https://nextjs.org/docs/messages/prerender-error
+Export encountered an error on /dashboard/client/page: /dashboard/client, exiting the build.
+ ⨯ useSearchParams() should be wrapped in a suspense boundary at page "/404". Read more: https://nextjs.org/docs/messages/missing-suspense-with-csr-bailout
+    at g (/home/chegbe/Desktop/Projects/Frontend_serviceman/frontend/.next/server/chunks/825.js:3:126921)
+    at m (/home/chegbe/Desktop/Projects/Frontend_serviceman/frontend/.next/server/chunks/825.js:11:162390)
+    at i (/home/chegbe/Desktop/Projects/Frontend_serviceman/frontend/.next/server/chunks/294.js:1:31964)
+    at n3 (/home/chegbe/Desktop/Projects/Frontend_serviceman/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:2:82831)
+    at n6 (/home/chegbe/Desktop/Projects/Frontend_serviceman/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:2:84601)
+    at n6 (/home/chegbe/Desktop/Projects/Frontend_serviceman/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:2:101560)
+    at n5 (/home/chegbe/Desktop/Projects/Frontend_serviceman/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:2:104801)
+    at n7 (/home/chegbe/Desktop/Projects/Frontend_serviceman/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:2:102219)
+    at ia (/home/chegbe/Desktop/Projects/Frontend_serviceman/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:2:108211)
+    at ie (/home/chegbe/Desktop/Projects/Frontend_serviceman/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:2:106833)
+Error occurred prerendering page "/_not-found". Read more: https://nextjs.org/docs/messages/prerender-error
+Export encountered an error on /_not-found/page: /_not-found, exiting the build.
+ ⨯ Next.js build worker exited with code: 1 and signal: null

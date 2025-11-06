@@ -29,7 +29,7 @@ export function getServerDownUntil(): number {
 }
 
 // Function to add subscribers to the refresh queue
-function subscribeTokenRefresh(callback: (token: string) => void) {
+function subscribeTokenRefresh(callback: (token: string) => void) {''
   refreshSubscribers.push(callback);
 }
 
@@ -230,7 +230,7 @@ const CIRCUIT_BREAKER_TIMEOUT = 60000; // 60 seconds
 
 // Add circuit breaker check to all requests
 const originalRequest = api.request;
-api.request = function(config) {
+api.request = function(config: any): any {
   const now = Date.now();
   
   // If we've had too many consecutive failures recently, block requests

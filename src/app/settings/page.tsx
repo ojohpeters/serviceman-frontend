@@ -190,7 +190,7 @@ export default function SettingsPage() {
                                   <input
                                     type="tel"
                                     className="form-control"
-                                    value={user?.phone_number || ''}
+                                    value={(user as any)?.phone_number || ''}
                                     readOnly
                                   />
                                 </div>

@@ -1,0 +1,29 @@
+
+> frontend@0.1.0 build
+> next build
+
+ ⚠ Warning: Next.js inferred your workspace root, but it may not be correct.
+ We detected multiple lockfiles and selected the directory of /home/chegbe/Desktop/Projects/package-lock.json as the root directory.
+ To silence this warning, set `outputFileTracingRoot` in your Next.js config, or consider removing one of the lockfiles if it's not needed.
+   See https://nextjs.org/docs/app/api-reference/config/next-config-js/output#caveats for more information.
+ Detected additional lockfiles: 
+   * /home/chegbe/Desktop/Projects/Frontend_serviceman/frontend/package-lock.json
+
+   ▲ Next.js 15.5.3
+
+   Creating an optimized production build ...
+ ✓ Compiled successfully in 4.1s
+   Linting and checking validity of types ...
+Failed to compile.
+
+./src/app/servicemen/page.tsx:183:49
+Type error: Property 'full_name' does not exist on type 'User'.
+
+[0m [90m 181 |[39m                           [33m<[39m[33mh5[39m className[33m=[39m[32m"mb-1 text-truncate"[39m[33m>[39m
+ [90m 182 |[39m                             {[36mtypeof[39m serviceman[33m.[39muser [33m===[39m [32m'object'[39m 
+[31m[1m>[22m[39m[90m 183 |[39m                               [33m?[39m serviceman[33m.[39muser[33m.[39mfull_name [33m||[39m serviceman[33m.[39muser[33m.[39musername 
+ [90m     |[39m                                                 [31m[1m^[22m[39m
+ [90m 184 |[39m                               [33m:[39m [32m`Serviceman #${serviceman.user}`[39m}
+ [90m 185 |[39m                           [33m<[39m[33m/[39m[33mh5[39m[33m>[39m
+ [90m 186 |[39m                           {serviceman[33m.[39mcategory [33m&&[39m ([0m
+Next.js build worker exited with code: 1 and signal: null

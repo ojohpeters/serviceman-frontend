@@ -91,7 +91,7 @@ export const notificationsService = {
       is_read: false,
       limit: limit || 50
     });
-    return response.results;
+    return response;
   },
 
   /**
@@ -102,7 +102,7 @@ export const notificationsService = {
       is_read: true,
       limit: limit || 50
     });
-    return response.results;
+    return response;
   },
 };
 
