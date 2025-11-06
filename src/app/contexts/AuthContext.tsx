@@ -167,8 +167,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
   };
 
   const logout = () => {
+    console.log('🚪 [AuthContext] Logging out...');
     authService.logout();
     setUser(null);
+    
+    // Force a hard reload to clear all state
+    if (typeof window !== 'undefined') {
+      window.location.href = '/auth/login';
+    }
   };
 
   const value: AuthContextType = {

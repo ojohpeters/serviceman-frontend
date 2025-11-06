@@ -237,9 +237,24 @@ export const authService = {
    * Logout user (clear tokens)
    */
   logout: (): void => {
+    console.log('🚪 [Auth Service] Clearing all authentication data...');
     if (typeof window !== 'undefined') {
+      // Clear tokens
       localStorage.removeItem('accessToken');
       localStorage.removeItem('refreshToken');
+      
+      // Clear any cached user data
+      localStorage.removeItem('user');
+      localStorage.removeItem('userType');
+      localStorage.removeItem('userData');
+      
+      // Clear any pending requests/payments
+      localStorage.removeItem('pendingServiceRequest');
+      localStorage.removeItem('pendingPaymentReference');
+      localStorage.removeItem('pendingServiceRequestId');
+      localStorage.removeItem('paymentType');
+      
+      console.log('✅ [Auth Service] All data cleared');
     }
   },
 
