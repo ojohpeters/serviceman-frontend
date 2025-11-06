@@ -767,6 +767,263 @@ export default function ServiceRequestDetailPage() {
                 </div>
               </div>
 
+              {/* Contact Information Card */}
+              <div className="card shadow-sm mb-4">
+                <div className="card-header bg-light">
+                  <h5 className="mb-0">
+                    <i className="bi bi-telephone me-2"></i>
+                    Contact Information
+                  </h5>
+                </div>
+                <div className="card-body">
+                  <div className="row">
+                    {/* Admin sees all contacts */}
+                    {user?.user_type === 'ADMIN' && (
+                      <>
+                        {/* Client Contact */}
+                        <div className="col-md-4 mb-3">
+                          <div className="p-3 bg-primary bg-opacity-10 rounded h-100 border border-primary">
+                            <h6 className="fw-bold mb-3 text-primary">
+                              <i className="bi bi-person-circle me-2"></i>
+                              Client
+                            </h6>
+                            {(() => {
+                              const client = serviceRequest.client as any;
+                              const clientName = typeof client === 'object' 
+                                ? (client.full_name || client.username || `Client #${client.id}`)
+                                : `Client #${client}`;
+                              const clientEmail = typeof client === 'object' ? client.email : '';
+                              const clientPhone = typeof client === 'object' ? client.phone_number : '';
+                              
+                              return (
+                                <>
+                                  <div className="mb-2">
+                                    <small className="text-muted d-block">Name:</small>
+                                    <strong className="text-break">{clientName}</strong>
+                                  </div>
+                                  {clientEmail && (
+                                    <div className="mb-2">
+                                      <small className="text-muted d-block">Email:</small>
+                                      <a href={`mailto:${clientEmail}`} className="text-decoration-none text-break d-block" style={{ fontSize: '0.9rem' }}>
+                                        {clientEmail}
+                                      </a>
+                                    </div>
+                                  )}
+                                  {clientPhone && (
+                                    <div className="mb-2">
+                                      <small className="text-muted d-block">Phone:</small>
+                                      <a href={`tel:${clientPhone}`} className="text-decoration-none">
+                                        {clientPhone}
+                                      </a>
+                                    </div>
+                                  )}
+                                  <div className="mb-0">
+                                    <small className="text-muted d-block">Address:</small>
+                                    <span className="text-break" style={{ fontSize: '0.9rem' }}>{serviceRequest.client_address}</span>
+                                  </div>
+                                </>
+                              );
+                            })()}
+                          </div>
+                        </div>
+
+                        {/* Primary Serviceman Contact */}
+                        {serviceRequest.serviceman && (
+                          <div className="col-md-4 mb-3">
+                            <div className="p-3 bg-success bg-opacity-10 rounded h-100 border border-success">
+                              <h6 className="fw-bold mb-3 text-success">
+                                <i className="bi bi-wrench me-2"></i>
+                                Primary Serviceman
+                              </h6>
+                              {(() => {
+                                const serviceman = serviceRequest.serviceman as any;
+                                const user = typeof serviceman.user === 'object' ? serviceman.user : null;
+                                const servicemanName = (user as any)?.full_name || user?.username || `Serviceman #${serviceman.id || serviceman}`;
+                                const servicemanEmail = user?.email || '';
+                                const servicemanPhone = serviceman.phone_number || '';
+                                
+                                return (
+                                  <>
+                                    <div className="mb-2">
+                                      <small className="text-muted d-block">Name:</small>
+                                      <strong className="text-break">{servicemanName}</strong>
+                                    </div>
+                                    {servicemanEmail && (
+                                      <div className="mb-2">
+                                        <small className="text-muted d-block">Email:</small>
+                                        <a href={`mailto:${servicemanEmail}`} className="text-decoration-none text-break d-block" style={{ fontSize: '0.9rem' }}>
+                                          {servicemanEmail}
+                                        </a>
+                                      </div>
+                                    )}
+                                    {servicemanPhone && (
+                                      <div className="mb-2">
+                                        <small className="text-muted d-block">Phone:</small>
+                                        <a href={`tel:${servicemanPhone}`} className="text-decoration-none">
+                                          {servicemanPhone}
+                                        </a>
+                                      </div>
+                                    )}
+                                    {serviceman.rating && (
+                                      <div className="mb-0">
+                                        <small className="text-muted d-block">Rating:</small>
+                                        <span className="text-warning">
+                                          {'★'.repeat(Math.round(parseFloat(serviceman.rating)))}
+                                          <span className="ms-1">{parseFloat(serviceman.rating).toFixed(1)}</span>
+                                        </span>
+                                      </div>
+                                    )}
+                                  </>
+                                );
+                              })()}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Backup Serviceman Contact */}
+                        {serviceRequest.backup_serviceman && (
+                          <div className="col-md-4 mb-3">
+                            <div className="p-3 bg-warning bg-opacity-10 rounded h-100 border border-warning">
+                              <h6 className="fw-bold mb-3 text-warning">
+                                <i className="bi bi-person-plus me-2"></i>
+                                Backup Serviceman
+                              </h6>
+                              {(() => {
+                                const backup = serviceRequest.backup_serviceman as any;
+                                const user = typeof backup.user === 'object' ? backup.user : null;
+                                const backupName = (user as any)?.full_name || user?.username || `Serviceman #${backup.id || backup}`;
+                                const backupEmail = user?.email || '';
+                                const backupPhone = backup.phone_number || '';
+                                
+                                return (
+                                  <>
+                                    <div className="mb-2">
+                                      <small className="text-muted d-block">Name:</small>
+                                      <strong className="text-break">{backupName}</strong>
+                                    </div>
+                                    {backupEmail && (
+                                      <div className="mb-2">
+                                        <small className="text-muted d-block">Email:</small>
+                                        <a href={`mailto:${backupEmail}`} className="text-decoration-none text-break d-block" style={{ fontSize: '0.9rem' }}>
+                                          {backupEmail}
+                                        </a>
+                                      </div>
+                                    )}
+                                    {backupPhone && (
+                                      <div className="mb-2">
+                                        <small className="text-muted d-block">Phone:</small>
+                                        <a href={`tel:${backupPhone}`} className="text-decoration-none">
+                                          {backupPhone}
+                                        </a>
+                                      </div>
+                                    )}
+                                    {backup.rating && (
+                                      <div className="mb-0">
+                                        <small className="text-muted d-block">Rating:</small>
+                                        <span className="text-warning">
+                                          {'★'.repeat(Math.round(parseFloat(backup.rating)))}
+                                          <span className="ms-1">{parseFloat(backup.rating).toFixed(1)}</span>
+                                        </span>
+                                      </div>
+                                    )}
+                                  </>
+                                );
+                              })()}
+                            </div>
+                          </div>
+                        )}
+                      </>
+                    )}
+
+                    {/* Client sees serviceman contact */}
+                    {user?.user_type === 'CLIENT' && serviceRequest.serviceman && (
+                      <div className="col-md-6 mb-3">
+                        <div className="p-3 bg-success bg-opacity-10 rounded h-100 border border-success">
+                          <h6 className="fw-bold mb-3 text-success">
+                            <i className="bi bi-person-check me-2"></i>
+                            Your Assigned Serviceman
+                          </h6>
+                          {(() => {
+                            const serviceman = serviceRequest.serviceman as any;
+                            const user = typeof serviceman.user === 'object' ? serviceman.user : null;
+                            const servicemanName = (user as any)?.full_name || user?.username || 'Assigned Professional';
+                            const servicemanPhone = serviceman.phone_number || '';
+                            
+                            return (
+                              <>
+                                <div className="mb-2">
+                                  <small className="text-muted d-block">Name:</small>
+                                  <strong className="text-break">{servicemanName}</strong>
+                                </div>
+                                {servicemanPhone && (
+                                  <div className="mb-2">
+                                    <small className="text-muted d-block">Contact:</small>
+                                    <a href={`tel:${servicemanPhone}`} className="btn btn-sm btn-success">
+                                      <i className="bi bi-telephone me-1"></i>
+                                      Call Serviceman
+                                    </a>
+                                  </div>
+                                )}
+                                {serviceman.rating && (
+                                  <div className="mb-0">
+                                    <small className="text-muted d-block">Rating:</small>
+                                    <span className="text-warning">
+                                      {'★'.repeat(Math.round(parseFloat(serviceman.rating)))}
+                                      <span className="ms-1">{parseFloat(serviceman.rating).toFixed(1)}</span>
+                                    </span>
+                                  </div>
+                                )}
+                              </>
+                            );
+                          })()}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Serviceman sees client contact */}
+                    {user?.user_type === 'SERVICEMAN' && (
+                      <div className="col-md-6 mb-3">
+                        <div className="p-3 bg-primary bg-opacity-10 rounded h-100 border border-primary">
+                          <h6 className="fw-bold mb-3 text-primary">
+                            <i className="bi bi-person-circle me-2"></i>
+                            Client Contact
+                          </h6>
+                          {(() => {
+                            const client = serviceRequest.client as any;
+                            const clientName = typeof client === 'object' 
+                              ? (client.full_name || client.username || 'Client')
+                              : 'Client';
+                            const clientPhone = typeof client === 'object' ? client.phone_number : '';
+                            
+                            return (
+                              <>
+                                <div className="mb-2">
+                                  <small className="text-muted d-block">Name:</small>
+                                  <strong className="text-break">{clientName}</strong>
+                                </div>
+                                <div className="mb-2">
+                                  <small className="text-muted d-block">Address:</small>
+                                  <span className="text-break" style={{ fontSize: '0.9rem' }}>{serviceRequest.client_address}</span>
+                                </div>
+                                {clientPhone && (
+                                  <div className="mb-0">
+                                    <small className="text-muted d-block">Contact:</small>
+                                    <a href={`tel:${clientPhone}`} className="btn btn-sm btn-primary">
+                                      <i className="bi bi-telephone me-1"></i>
+                                      Call Client
+                                    </a>
+                                  </div>
+                                )}
+                              </>
+                            );
+                          })()}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
               {/* Cost Information Card */}
               <div className="card shadow-sm mb-4">
                 <div className="card-header">
