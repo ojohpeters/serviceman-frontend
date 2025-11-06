@@ -84,18 +84,6 @@ export default function HeroSection() {
           </p>
         </div>
 
-        {/* Features */}
-        <div className="d-flex justify-content-center gap-4 mb-5 flex-wrap">
-          {features.map((feature, index) => (
-            <div key={index} className="d-flex align-items-center gap-2 text-gray-600">
-              <div className="d-flex align-items-center justify-content-center w-8 h-8 bg-blue-100 rounded-circle">
-                {feature.icon}
-              </div>
-              <span className="fw-medium text-sm">{feature.text}</span>
-            </div>
-          ))}
-        </div>
-
         {/* Enhanced Search Bar */}
         <div
           className={`mx-auto mb-6 transition-all duration-300 ${
@@ -148,7 +136,15 @@ export default function HeroSection() {
                     <div 
                       key={category.id}
                       className="px-3 py-2 hover-bg-gray-50 rounded cursor-pointer d-flex align-items-center gap-2"
-                      onClick={() => setSearchQuery(category.name)}
+                      onMouseDown={(e) => {
+                        e.preventDefault(); // Prevent blur from firing
+                        setSearchQuery(category.name);
+                        // Small delay to let the state update, then search
+                        setTimeout(() => {
+                          router.push(`/servicemen?search=${encodeURIComponent(category.name)}`);
+                        }, 100);
+                      }}
+                      style={{ cursor: 'pointer' }}
                     >
                       <Search className="text-gray-400" size={16} />
                       <span className="text-gray-700">{category.name}</span>
@@ -160,30 +156,8 @@ export default function HeroSection() {
           </div>
         </div>
 
-        {/* Trust Indicators */}
-        <div className="row g-3 justify-content-center mb-5">
-          <div className="col-auto">
-            <div className="d-flex align-items-center gap-2 px-4 py-2 bg-white rounded-pill shadow-sm border border-gray-100">
-              <Shield size={20} className="text-blue-600" />
-              <span className="text-gray-700 fw-semibold" style={{ fontSize: '0.9rem' }}>Verified Professionals</span>
-            </div>
-          </div>
-          <div className="col-auto">
-            <div className="d-flex align-items-center gap-2 px-4 py-2 bg-white rounded-pill shadow-sm border border-gray-100">
-              <Clock size={20} className="text-emerald-600" />
-              <span className="text-gray-700 fw-semibold" style={{ fontSize: '0.9rem' }}>Quick Response</span>
-            </div>
-          </div>
-          <div className="col-auto">
-            <div className="d-flex align-items-center gap-2 px-4 py-2 bg-white rounded-pill shadow-sm border border-gray-100">
-              <CheckCircle size={20} className="text-amber-600" />
-              <span className="text-gray-700 fw-semibold" style={{ fontSize: '0.9rem' }}>Quality Guaranteed</span>
-            </div>
-          </div>
-        </div>
-
         {/* CTA Buttons */}
-        <div className="d-flex flex-column flex-sm-row justify-content-center gap-3 mt-4">
+        <div className="d-flex flex-column flex-sm-row justify-content-center gap-3 mb-5">
           <Link 
             href="/categories" 
             className="btn btn-primary btn-lg px-5 py-3 fw-semibold rounded-pill shadow-lg hover-lift"
@@ -202,6 +176,22 @@ export default function HeroSection() {
           >
             Become a Provider
           </Link>
+        </div>
+
+        {/* Trust Indicators - Moved below CTA */}
+        <div className="d-flex justify-content-center gap-3 flex-wrap mt-4">
+          <div className="d-flex align-items-center gap-2 px-3 py-2 bg-white bg-opacity-80 rounded-pill border border-gray-200">
+            <Shield size={18} className="text-blue-600" />
+            <span className="text-gray-700" style={{ fontSize: '0.85rem' }}>Verified</span>
+          </div>
+          <div className="d-flex align-items-center gap-2 px-3 py-2 bg-white bg-opacity-80 rounded-pill border border-gray-200">
+            <Clock size={18} className="text-emerald-600" />
+            <span className="text-gray-700" style={{ fontSize: '0.85rem' }}>Fast Response</span>
+          </div>
+          <div className="d-flex align-items-center gap-2 px-3 py-2 bg-white bg-opacity-80 rounded-pill border border-gray-200">
+            <CheckCircle size={18} className="text-amber-600" />
+            <span className="text-gray-700" style={{ fontSize: '0.85rem' }}>Quality Guaranteed</span>
+          </div>
         </div>
       </div>
 
