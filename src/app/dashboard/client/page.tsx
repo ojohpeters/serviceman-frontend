@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Nav from "../../components/common/Nav";
 import SecondFooter from "../../components/common/SecondFooter";
 import ClientSidebar from "../../components/clientdashboard/ClientSidebar";
@@ -16,10 +17,22 @@ import { useNotifications } from "../../contexts/NotificationContext";
 import Link from "next/link";
 
 export default function ClientDashboardPage(): React.ReactElement {
+  const router = useRouter();
   const { loading: authLoading } = useAuth();
   const { user: userData, loading: userLoading } = useUser();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  
+  // Redirect non-clients to their correct dashboard
+  useEffect(() => {
+    if (!userLoading && userData && userData.user_type !== 'CLIENT') {
+      console.log('⚠️ [Client Dashboard] Wrong user type:', userData.user_type, '- Redirecting...');
+      const correctDashboard = userData.user_type === 'ADMIN' 
+        ? '/admin/dashboard' 
+        : '/dashboard/worker';
+      router.replace(correctDashboard);
+    }
+  }, [userData, userLoading, router]);
   
   // Use the service requests hook
   const { 

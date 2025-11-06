@@ -9,14 +9,24 @@ html, body {
   overflow-wrap: break-word;
 }
 
-/* Ensure content doesn't get hidden by fixed footer on mobile */
-main, .main-content, section {
-  padding-bottom: 80px !important;
+/* Ensure content doesn't get hidden by fixed footer */
+body {
+  padding-bottom: 60px;
 }
 
 @media (max-width: 768px) {
-  main, .main-content, section {
-    padding-bottom: 120px !important;
+  body {
+    padding-bottom: 80px;
+  }
+  
+  /* Extra padding for scrollable sections on mobile */
+  main, .main-content, section, .flex-grow-1 {
+    padding-bottom: 100px !important;
+  }
+  
+  /* Specific fix for dashboard main content areas */
+  section[style*="overflowY"] {
+    padding-bottom: 150px !important;
   }
 }
 

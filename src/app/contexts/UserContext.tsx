@@ -34,6 +34,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     const hasAccess = !!tokens.accessToken;
     
     if (!hasAccess || !isAuthenticated) {
+      console.log('🔄 [UserContext] No auth, clearing user data');
       setUser(null);
       setClientProfile(null);
       setServicemanProfile(null);
@@ -44,7 +45,15 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     try {
       setLoading(true);
       setError(null);
+      
+      // Clear previous user data before fetching new
+      setUser(null);
+      setClientProfile(null);
+      setServicemanProfile(null);
+      
+      console.log('👤 [UserContext] Fetching fresh user data...');
       const userData = await userProfileService.getCurrentUser();
+      console.log('✅ [UserContext] User loaded:', userData.username, `(${userData.user_type})`);
       setUser(userData);
 
       if (userData.user_type === 'CLIENT') {

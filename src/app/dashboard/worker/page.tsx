@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Nav from "../../components/common/Nav";
 import SecondFooter from "../../components/common/SecondFooter";
 import WorkerSidebar from "../../components/workerdashboard/WorkerSidebar";
@@ -18,9 +19,21 @@ import type { ServiceRequest } from "../../types/api";
 import Link from "next/link";
 
 export default function WorkerDashboardPage(): React.ReactElement {
+  const router = useRouter();
   const { isAuthenticated, loading: authLoading, logout } = useAuth();
   const { user, servicemanProfile, loading: userLoading } = useUser();
   const [isAvailable, setIsAvailable] = useState(servicemanProfile?.is_available || false);
+  
+  // Redirect non-servicemen to their correct dashboard
+  useEffect(() => {
+    if (!userLoading && user && user.user_type !== 'SERVICEMAN') {
+      console.log('⚠️ [Worker Dashboard] Wrong user type:', user.user_type, '- Redirecting...');
+      const correctDashboard = user.user_type === 'ADMIN' 
+        ? '/admin/dashboard' 
+        : '/dashboard/client';
+      router.replace(correctDashboard);
+    }
+  }, [user, userLoading, router]);
   
   // Use hooks for service requests and notifications
   const { 
