@@ -1,5 +1,6 @@
 "use client";
 import React from "react";
+import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 
 export default function CTA(): React.ReactElement {
@@ -30,16 +31,16 @@ export default function CTA(): React.ReactElement {
                       perfect service provider
                     </p>
                     <div className="d-flex flex-column flex-sm-row gap-3 justify-content-center">
-                      <button className="btn btn-primary btn-lg px-4 py-3">
+                      <Link href="/servicemen" className="btn btn-primary btn-lg px-4 py-3">
                         Find a Service Provider
                         <ArrowRight
                           className="ms-2"
                           style={{ width: "1.25rem", height: "1.25rem" }}
                         />
-                      </button>
-                      <button className="btn btn-outline-primary btn-lg px-4 py-3 sophisticated-outline-btn">
+                      </Link>
+                      <Link href="/auth/register/serviceman" className="btn btn-outline-primary btn-lg px-4 py-3 sophisticated-outline-btn">
                         Become a Provider
-                      </button>
+                      </Link>
                     </div>
                   </div>
                 </div>

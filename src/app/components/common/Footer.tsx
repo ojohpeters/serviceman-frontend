@@ -150,7 +150,7 @@ const Footer = () => (
               >
                 SACS Computers
               </a>
-              {" "}- Professional IT Solutions
+              {" "}- IT in your palms
             </p>
           </div>
         </div>

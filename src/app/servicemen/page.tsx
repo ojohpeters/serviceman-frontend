@@ -101,7 +101,7 @@ function ServicemenContent() {
                   <input
                     type="text"
                     className="form-control"
-                    placeholder="Search by name..."
+                    placeholder="Search by name, skill, or category..."
                     value={filters.search}
                     onChange={(e) => handleFilterChange('search', e.target.value)}
                   />
@@ -173,11 +173,28 @@ function ServicemenContent() {
             <div className="alert alert-danger">{error}</div>
           ) : servicemen.length === 0 ? (
             <div className="text-center py-5">
-              <i className="bi bi-search fs-1 text-muted"></i>
-              <p className="text-muted mt-3">No servicemen found matching your filters</p>
-              <button onClick={clearFilters} className="btn btn-primary">
-                Clear Filters
-              </button>
+              <div className="card border-0 shadow-sm p-5">
+                <i className="bi bi-search fs-1 text-muted mb-3"></i>
+                <h5 className="mb-3">No servicemen found</h5>
+                <p className="text-muted mb-4">
+                  {filters.search && (
+                    <>
+                      No results for "<strong>{filters.search}</strong>". 
+                      <br />
+                      <small>Note: Search looks for exact or partial matches in serviceman names. For services like "Mechanic" or "Plumber", try browsing by category instead.</small>
+                    </>
+                  )}
+                  {!filters.search && "Try adjusting your filters or browse all servicemen."}
+                </p>
+                <div className="d-flex gap-2 justify-content-center">
+                  <button onClick={clearFilters} className="btn btn-primary">
+                    Clear All Filters
+                  </button>
+                  <a href="/categories" className="btn btn-outline-primary">
+                    Browse by Category
+                  </a>
+                </div>
+              </div>
             </div>
           ) : (
             <div className="row">

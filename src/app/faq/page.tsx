@@ -26,7 +26,7 @@ export default function FAQPage() {
         },
         {
           q: "How does the pricing work?",
-          a: "After you book, the serviceman reviews your request and provides an estimate. Our admin team then adds a small platform fee (typically 10%) for maintenance and support. You'll see the full breakdown before making the final payment."
+          a: "After you book, the serviceman reviews your request and provides a detailed estimate based on the work required. You'll see the full cost breakdown before making the final payment, ensuring complete transparency."
         },
         {
           q: "Can I cancel a booking?",
@@ -38,7 +38,7 @@ export default function FAQPage() {
         },
         {
           q: "What if I'm not satisfied with the service?",
-          a: "Our admin team monitors all service requests. If you have any issues, you can report them through the service request page. We take quality seriously and will work to resolve any problems."
+          a: "If you have any issues with the service, you can report them while rating and reviewing the serviceman after completion. You can also contact us directly through our contact page. We take quality seriously and will work to resolve any problems."
         }
       ]
     },
@@ -161,7 +161,17 @@ export default function FAQPage() {
                     </div>
                     {isOpen && (
                       <div className="card-body pt-0 px-4 pb-4">
-                        <p className="text-muted mb-0">{faq.a}</p>
+                        <p className="text-muted mb-0">
+                          {faq.a}
+                          {faq.q === "What if I'm not satisfied with the service?" && (
+                            <>
+                              {" "}
+                              <a href="/contact" className="text-primary text-decoration-none fw-semibold">
+                                Visit our contact page →
+                              </a>
+                            </>
+                          )}
+                        </p>
                       </div>
                     )}
                   </div>

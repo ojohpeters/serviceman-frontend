@@ -157,7 +157,7 @@ export default function ContactPage() {
                       </div>
                     </a>
                     <p className="text-muted small mt-2 mb-0">
-                      Professional IT Solutions & Web Development
+                      IT in your palms
                     </p>
                   </div>
                 </div>

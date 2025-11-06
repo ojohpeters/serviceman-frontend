@@ -159,20 +159,20 @@ export default function HeroSection() {
         {/* CTA Buttons */}
         <div className="d-flex flex-column flex-sm-row justify-content-center gap-3 mb-5">
           <Link 
-            href="/categories" 
+            href="/servicemen" 
             className="btn btn-primary btn-lg px-5 py-3 fw-semibold rounded-pill shadow-lg hover-lift"
             style={{ 
               background: "linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%)",
               border: "none",
-              minWidth: "180px"
+              minWidth: "200px"
             }}
           >
-            Book a Service
+            Find a Service Provider
           </Link>
           <Link 
             href="/auth/register/serviceman" 
             className="btn btn-outline-primary btn-lg px-5 py-3 fw-semibold rounded-pill border-2 hover-lift"
-            style={{ minWidth: "180px" }}
+            style={{ minWidth: "200px" }}
           >
             Become a Provider
           </Link>

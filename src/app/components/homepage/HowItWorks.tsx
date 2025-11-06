@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import Link from "next/link";
 import {
   ArrowRight,
   CheckCircle,
@@ -154,9 +155,9 @@ export default function HowItWorks() {
                   )}
 
                   <div className="mt-3">
-                    <button className="btn btn-sm btn-link text-decoration-none learn-more">
+                    <a href="/faq" className="btn btn-sm btn-link text-decoration-none learn-more">
                       Learn more <ArrowRight size={14} className="ms-1" />
-                    </button>
+                    </a>
                   </div>
                 </div>
               </article>
@@ -166,13 +167,13 @@ export default function HowItWorks() {
 
         {/* CTA */}
         <div className="text-center mt-5">
-          <button
+          <Link
+            href={activeTab === "users" ? "/servicemen" : "/auth/register/serviceman"}
             className="btn btn-primary btn-lg px-5 py-2 rounded-pill fw-semibold cta-btn"
-            type="button"
           >
             {activeTab === "users" ? "Find a Service Provider" : "Become a Provider"}
             <ArrowRight size={16} className="ms-2" />
-          </button>
+          </Link>
         </div>
       </div>
 
