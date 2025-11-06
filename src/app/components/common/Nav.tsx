@@ -72,11 +72,14 @@ const Nav = () => {
             <a href="/about" className="text-decoration-none me-4 sophisticated-nav-link">
               About Us
             </a>
+            <a href="/servicemen" className="text-decoration-none me-4 sophisticated-nav-link">
+              Services
+            </a>
+            <a href="/contact" className="text-decoration-none me-4 sophisticated-nav-link">
+              Contact
+            </a>
             <a href="/faq" className="text-decoration-none me-4 sophisticated-nav-link">
               FAQs
-            </a>
-            <a href="/servicemen" className="text-decoration-none me-4 sophisticated-nav-link">
-              Browse Services
             </a>
             
             {/* Admin Link - Visible to everyone */}
@@ -205,11 +208,14 @@ const Nav = () => {
                 <a href="/about" className="d-block py-2 text-decoration-none text-dark">
                   About Us
                 </a>
+                <a href="/servicemen" className="d-block py-2 text-decoration-none text-dark">
+                  Services
+                </a>
+                <a href="/contact" className="d-block py-2 text-decoration-none text-dark">
+                  Contact
+                </a>
                 <a href="/faq" className="d-block py-2 text-decoration-none text-dark">
                   FAQs
-                </a>
-                <a href="/servicemen" className="d-block py-2 text-decoration-none text-dark">
-                  Browse Services
                 </a>
               </div>
 

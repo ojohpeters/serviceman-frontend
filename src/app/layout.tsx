@@ -23,7 +23,17 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "ServiceHub - Connect with Trusted Service Providers",
   description:
-    "Find skilled professionals for all your home and business needs. we connect you with verified experts in your area.",
+    "Find skilled professionals for all your home and business needs. We connect you with verified experts in your area. Developed by SACS Computers.",
+  icons: {
+    icon: [
+      { url: '/favicon.ico' },
+      { url: '/favicon-16x16.png', sizes: '16x16', type: 'image/png' },
+      { url: '/favicon-32x32.png', sizes: '32x32', type: 'image/png' },
+    ],
+    apple: [
+      { url: '/apple-touch-icon.png' },
+    ],
+  },
 };
 
 export default function RootLayout({

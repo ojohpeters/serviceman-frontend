@@ -79,6 +79,14 @@ const Footer = () => (
             </li>
             <li className="mb-2">
               <a
+                href="/contact"
+                className="text-decoration-none sophisticated-footer-link"
+              >
+                Contact
+              </a>
+            </li>
+            <li className="mb-2">
+              <a
                 href="/auth/register/serviceman"
                 className="text-decoration-none sophisticated-footer-link"
               >
@@ -123,10 +131,29 @@ const Footer = () => (
         </div>
       </div>
       <div
-        className="border-top pt-4 mt-4 text-center"
+        className="border-top pt-4 mt-4"
         style={{ color: "var(--muted-foreground)" }}
       >
-        <p className="mb-0">&copy; 2025 ServiceHub. All rights reserved.</p>
+        <div className="row align-items-center">
+          <div className="col-md-6 text-center text-md-start mb-3 mb-md-0">
+            <p className="mb-0">&copy; 2025 ServiceHub. All rights reserved.</p>
+          </div>
+          <div className="col-md-6 text-center text-md-end">
+            <p className="mb-0 small">
+              Developed by{" "}
+              <a 
+                href="https://www.sacscomputers.com/" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-decoration-none fw-semibold"
+                style={{ color: "var(--bs-primary)" }}
+              >
+                SACS Computers
+              </a>
+              {" "}- Professional IT Solutions
+            </p>
+          </div>
+        </div>
       </div>
     </div>
   </footer>
