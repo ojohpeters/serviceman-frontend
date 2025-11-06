@@ -83,6 +83,7 @@ export default function PopularServices(): React.ReactElement {
   const loadCategories = async () => {
     try {
       const data = await categoriesService.getCategories();
+      console.log('📥 Categories data:', data);
       // Take top 6 categories or all if less than 6
       setCategories(data.slice(0, 6));
     } catch (error) {
@@ -207,7 +208,7 @@ export default function PopularServices(): React.ReactElement {
                             width: "70px",
                             height: "70px",
                             background: hoveredCard === index 
-                              ? `linear-gradient(135deg, var(--tw-gradient-from), var(--tw-gradient-to))`
+                              ? `linear-gradient(135deg, rgba(102, 126, 234, 0.15), rgba(118, 75, 162, 0.15))`
                               : "linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.7) 100%)",
                             boxShadow: hoveredCard === index 
                               ? "0 8px 32px rgba(0,0,0,0.15), inset 0 1px 1px rgba(255,255,255,0.8)"
@@ -216,9 +217,10 @@ export default function PopularServices(): React.ReactElement {
                           }}
                         >
                           <div 
-                            className={`transition-all duration-500 ${
-                              hoveredCard === index ? 'scale-110 text-white' : colorScheme.color
-                            }`}
+                            className={`transition-all duration-500 ${colorScheme.color}`}
+                            style={{
+                              transform: hoveredCard === index ? 'scale(1.1)' : 'scale(1)'
+                            }}
                           >
                             {getIcon(category.name)}
                           </div>
@@ -226,23 +228,24 @@ export default function PopularServices(): React.ReactElement {
 
                         {/* Content */}
                         <h5 
-                          className="card-title fw-semibold mb-2 transition-colors duration-300"
+                          className="card-title fw-semibold mb-3 transition-colors duration-300"
                           style={{ 
-                            fontSize: "1rem",
+                            fontSize: "1.1rem",
                             color: hoveredCard === index ? '#1f2937' : '#374151'
                           }}
                         >
                           {category.name}
                         </h5>
                         
-                        {/* Servicemen count */}
+                        {/* Description or tagline */}
                         <p 
                           className="card-text small transition-colors duration-300 mb-3"
                           style={{
-                            color: hoveredCard === index ? '#6b7280' : '#9ca3af'
+                            color: hoveredCard === index ? '#6b7280' : '#9ca3af',
+                            fontSize: '0.85rem'
                           }}
                         >
-                          {category.serviceman_count || 0} {category.serviceman_count === 1 ? 'provider' : 'providers'}
+                          Professional {category.name} Services
                         </p>
                       </div>
 
