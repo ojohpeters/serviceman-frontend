@@ -82,7 +82,7 @@ export default function PopularServices(): React.ReactElement {
 
   const loadCategories = async () => {
     try {
-      const data = await categoriesService.getAllCategories();
+      const data = await categoriesService.getCategories();
       // Take top 6 categories or all if less than 6
       setCategories(data.slice(0, 6));
     } catch (error) {
