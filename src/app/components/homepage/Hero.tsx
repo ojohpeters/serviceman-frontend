@@ -27,8 +27,18 @@ export default function HeroSection() {
 
   const handleSearch = () => {
     if (searchQuery.trim()) {
-      // Navigate to servicemen page with search query
-      router.push(`/servicemen?search=${encodeURIComponent(searchQuery.trim())}`);
+      // Check if search matches a category name
+      const matchingCategory = categories.find(cat => 
+        cat.name.toLowerCase().includes(searchQuery.toLowerCase().trim())
+      );
+      
+      if (matchingCategory) {
+        // Navigate to that category's servicemen page
+        router.push(`/categories/${matchingCategory.id}/servicemen`);
+      } else {
+        // Navigate to servicemen page with search query
+        router.push(`/servicemen?search=${encodeURIComponent(searchQuery.trim())}`);
+      }
     }
   };
 
@@ -138,11 +148,8 @@ export default function HeroSection() {
                       className="px-3 py-2 hover-bg-gray-50 rounded cursor-pointer d-flex align-items-center gap-2"
                       onMouseDown={(e) => {
                         e.preventDefault(); // Prevent blur from firing
-                        setSearchQuery(category.name);
-                        // Small delay to let the state update, then search
-                        setTimeout(() => {
-                          router.push(`/servicemen?search=${encodeURIComponent(category.name)}`);
-                        }, 100);
+                        // Navigate directly to category servicemen page
+                        router.push(`/categories/${category.id}/servicemen`);
                       }}
                       style={{ cursor: 'pointer' }}
                     >

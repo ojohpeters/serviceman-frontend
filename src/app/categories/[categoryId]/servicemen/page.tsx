@@ -72,14 +72,30 @@ export default function CategoryServicemenPage({ params }: PageProps) {
         if (!q) return true;
         
         // Handle both flattened structure (from category endpoint) and nested structure
-        const full_name = s.full_name || 
-                         (typeof s.user === 'object' ? (s.user as any)?.full_name : '') || 
-                         s.username ||
-                         (typeof s.user === 'object' ? s.user?.username : '') || 
-                         '';
-        const bio = s.bio || '';
+        const user = typeof s.user === 'object' ? s.user : null;
+        const full_name = (s.full_name || 
+                          (user as any)?.full_name || 
+                          '').toLowerCase();
+        const username = (s.username || 
+                         user?.username || 
+                         '').toLowerCase();
+        const firstName = ((user as any)?.first_name || '').toLowerCase();
+        const lastName = ((user as any)?.last_name || '').toLowerCase();
         
-        return full_name.toLowerCase().includes(q) || bio.toLowerCase().includes(q);
+        // Search in skills
+        const skillNames = (s.skills || [])
+          .map((skill: any) => typeof skill === 'object' ? (skill.name || '').toLowerCase() : '')
+          .join(' ');
+        
+        const bio = (s.bio || '').toLowerCase();
+        
+        // Partial match across all fields
+        return full_name.includes(q) || 
+               username.includes(q) || 
+               firstName.includes(q) ||
+               lastName.includes(q) ||
+               skillNames.includes(q) ||
+               bio.includes(q);
       })
       .sort((a: any, b: any) => {
         if (sortBy === "rating") return (parseFloat(b.rating) || 0) - (parseFloat(a.rating) || 0);
