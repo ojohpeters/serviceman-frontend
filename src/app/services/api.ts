@@ -134,6 +134,14 @@ api.interceptors.response.use(
     // if 401 error and we haven't retried yet
     if (error.response?.status === 401 && !originalRequest._retry) {
       
+      // Only attempt token refresh if the original request had an Authorization header
+      // This prevents redirecting to login when accessing public endpoints
+      const hadAuthHeader = originalRequest?.headers?.Authorization;
+      if (!hadAuthHeader) {
+        // This is a public endpoint, just return the 401 error without redirecting
+        return Promise.reject(error);
+      }
+      
       // If we're already refreshing, add this request to the queue
       if (isRefreshing) {
         return new Promise((resolve, reject) => {

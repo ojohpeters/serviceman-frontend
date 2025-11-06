@@ -6,7 +6,6 @@ import { useAuth } from "../../contexts/AuthContext";
 import { useUser } from "../../contexts/UserContext";
 import SecondNav from "../../components/common/SecondNav";
 import SecondFooter from "../../components/common/SecondFooter";
-import LoginDebugger from "../../components/LoginDebugger";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -220,9 +219,6 @@ useEffect(() => {
       }}>
         <SecondFooter />
       </div>
-      
-      {/* Debug Component */}
-      <LoginDebugger />
     </div>
   );
 }
