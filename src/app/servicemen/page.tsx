@@ -1,13 +1,14 @@
 'use client';
-import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import React, { useState, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Nav from '../components/common/Nav';
 import SecondFooter from '../components/common/SecondFooter';
 import { useServicemen, useCategories } from '../hooks/useAPI';
 import type { ServicemanProfile } from '../types/api';
 
-export default function ServicemenListPage() {
+function ServicemenContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { categories } = useCategories();
   const [filters, setFilters] = useState({
     category: undefined as number | undefined,
@@ -16,6 +17,14 @@ export default function ServicemenListPage() {
     search: '',
     ordering: '-rating'
   });
+
+  // Read search query from URL on mount
+  useEffect(() => {
+    const searchQuery = searchParams.get('search');
+    if (searchQuery) {
+      setFilters(prev => ({ ...prev, search: searchQuery }));
+    }
+  }, [searchParams]);
 
   const { servicemen, statistics, loading, error } = useServicemen(filters);
 
@@ -294,6 +303,20 @@ export default function ServicemenListPage() {
         <SecondFooter />
       </div>
     </div>
+  );
+}
+
+export default function ServicemenListPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-vh-100 d-flex align-items-center justify-content-center">
+        <div className="spinner-border text-primary" role="status">
+          <span className="visually-hidden">Loading...</span>
+        </div>
+      </div>
+    }>
+      <ServicemenContent />
+    </Suspense>
   );
 }
 

@@ -1,13 +1,29 @@
 "use client";
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Search, TrendingUp, Users, Star, Shield, Clock, CheckCircle } from "lucide-react";
+import { categoriesService } from "../../services/categories";
 
 export default function HeroSection() {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const [categories, setCategories] = useState<any[]>([]);
+
+  useEffect(() => {
+    loadCategories();
+  }, []);
+
+  const loadCategories = async () => {
+    try {
+      const data = await categoriesService.getCategories();
+      // Take top 5 categories for suggestions
+      setCategories(data.slice(0, 5));
+    } catch (error) {
+      console.error('Failed to load categories:', error);
+    }
+  };
 
   const handleSearch = () => {
     if (searchQuery.trim()) {
@@ -124,18 +140,18 @@ export default function HeroSection() {
             </div>
             
             {/* Search suggestions */}
-            {isSearchFocused && (
+            {isSearchFocused && categories.length > 0 && (
               <div className="position-absolute top-100 start-0 end-0 mt-2 bg-white rounded-2xl shadow-xl border border-gray-100 py-3 z-10">
                 <div className="text-start px-3">
                   <div className="text-xs text-gray-500 fw-semibold mb-2 px-3">POPULAR SERVICES</div>
-                  {["Plumbing", "Electrical", "Cleaning", "Painting", "Carpentry"].map((service) => (
+                  {categories.map((category) => (
                     <div 
-                      key={service}
+                      key={category.id}
                       className="px-3 py-2 hover-bg-gray-50 rounded cursor-pointer d-flex align-items-center gap-2"
-                      onClick={() => setSearchQuery(service)}
+                      onClick={() => setSearchQuery(category.name)}
                     >
                       <Search className="text-gray-400" size={16} />
-                      <span className="text-gray-700">{service}</span>
+                      <span className="text-gray-700">{category.name}</span>
                     </div>
                   ))}
                 </div>
