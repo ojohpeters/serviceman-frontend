@@ -1004,13 +1004,11 @@ export default function ServiceRequestDetailPage() {
                           </h6>
                           {(() => {
                             const client = serviceRequest.client as any;
-                            console.log('👤 [Serviceman View] Client data:', client);
                             const clientName = typeof client === 'object' 
                               ? (client.full_name || client.username || 'Client')
                               : 'Client';
                             const clientEmail = typeof client === 'object' ? client.email : '';
                             const clientPhone = typeof client === 'object' ? client.phone_number : '';
-                            console.log('📞 [Serviceman View] Client phone:', clientPhone);
                             
                             return (
                               <>
