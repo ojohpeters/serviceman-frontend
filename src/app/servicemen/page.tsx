@@ -262,7 +262,10 @@ function ServicemenContent() {
                       {/* Action Button */}
                       <div className="mt-3">
                         <button
-                          onClick={() => router.push(`/servicemen/${serviceman.user}`)}
+                          onClick={() => {
+                            const userId = typeof serviceman.user === 'object' ? serviceman.user.id : serviceman.user;
+                            router.push(`/servicemen/${userId}`);
+                          }}
                           className="btn btn-primary w-100"
                         >
                           {serviceman.is_available ? (
