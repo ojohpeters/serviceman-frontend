@@ -68,14 +68,20 @@ export default function CategoryServicemenPage({ params }: PageProps) {
     
     const q = query.trim().toLowerCase();
     return servicemen
-      .filter((s: any) =>
-        !q ||
-        (s.full_name && s.full_name.toLowerCase().includes(q)) ||
-        (s.username && s.username.toLowerCase().includes(q)) ||
-        (s.bio && s.bio.toLowerCase().includes(q))
-      )
+      .filter((s: any) => {
+        if (!q) return true;
+        
+        // Extract user details from nested user object
+        const user = typeof s.user === 'object' ? s.user : null;
+        const full_name = (user as any)?.full_name || 
+                         (user?.first_name && user?.last_name ? `${user.first_name} ${user.last_name}` : '') ||
+                         user?.username || '';
+        const bio = s.bio || '';
+        
+        return full_name.toLowerCase().includes(q) || bio.toLowerCase().includes(q);
+      })
       .sort((a: any, b: any) => {
-        if (sortBy === "rating") return (b.rating || 0) - (a.rating || 0);
+        if (sortBy === "rating") return (parseFloat(b.rating) || 0) - (parseFloat(a.rating) || 0);
         if (sortBy === "jobs")
           return (b.total_jobs_completed || 0) - (a.total_jobs_completed || 0);
         return (b.years_of_experience || 0) - (a.years_of_experience || 0);
@@ -85,18 +91,28 @@ export default function CategoryServicemenPage({ params }: PageProps) {
   // Calculate statistics
   const stats = useMemo(() => {
     if (!Array.isArray(servicemen)) {
-      return { totalServicemen: 0, averageRating: 0, topRated: null };
+      return { totalServicemen: 0, averageRating: 0, topRated: null, topRatedName: '' };
     }
     
     const totalServicemen = servicemen.length;
     const averageRating = servicemen.length > 0 
-      ? servicemen.reduce((sum: number, s: any) => sum + (s.rating || 0), 0) / servicemen.length 
+      ? servicemen.reduce((sum: number, s: any) => sum + (parseFloat(s.rating) || 0), 0) / servicemen.length 
       : 0;
     const topRated = servicemen.length > 0 
-      ? servicemen.reduce((max: any, s: any) => (s.rating || 0) > (max.rating || 0) ? s : max, servicemen[0])
+      ? servicemen.reduce((max: any, s: any) => (parseFloat(s.rating) || 0) > (parseFloat(max.rating) || 0) ? s : max, servicemen[0])
       : null;
+    
+    // Extract top rated serviceman's name
+    let topRatedName = '';
+    if (topRated) {
+      const user = typeof topRated.user === 'object' ? topRated.user : null;
+      topRatedName = (user as any)?.full_name || 
+                    (user?.first_name && user?.last_name ? `${user.first_name} ${user.last_name}` : '') ||
+                    user?.username || 
+                    'Service Professional';
+    }
 
-    return { totalServicemen, averageRating, topRated };
+    return { totalServicemen, averageRating, topRated, topRatedName };
   }, [servicemen]);
 
   // Add Bootstrap Icons
@@ -236,9 +252,9 @@ export default function CategoryServicemenPage({ params }: PageProps) {
                     </div>
                     <div style={{ minWidth: 0 }}>
                       <div className="fw-bold text-dark fs-6 text-truncate" style={{ maxWidth: '150px' }}>
-                        {stats.topRated.full_name}
+                        {stats.topRatedName}
                       </div>
-                      <small className="text-muted">Top Rated ({stats.topRated.rating.toFixed(1)})</small>
+                      <small className="text-muted">Top Rated ({parseFloat(stats.topRated.rating).toFixed(1)}⭐)</small>
                     </div>
                   </div>
                 )}
