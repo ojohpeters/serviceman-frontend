@@ -8,80 +8,102 @@ import {
   Palette, 
   Drill,
   ArrowRight,
-  Star
+  Star,
+  Wrench,
+  Home,
+  Hammer
 } from "lucide-react";
 import ServicesButton from "../ServicesButton";
+import { categoriesService } from "../../services/categories";
+import { useRouter } from "next/navigation";
+
+// Icon mapping for categories
+const iconMap: Record<string, React.ReactElement> = {
+  "Plumbing": <Droplets className="w-6 h-6" />,
+  "Electrical": <Lightbulb className="w-6 h-6" />,
+  "Cleaning": <Sparkles className="w-6 h-6" />,
+  "Gardening": <Sprout className="w-6 h-6" />,
+  "Painting": <Palette className="w-6 h-6" />,
+  "Carpentry": <Drill className="w-6 h-6" />,
+  "Plumber": <Droplets className="w-6 h-6" />,
+  "Electrician": <Lightbulb className="w-6 h-6" />,
+  "Mechanic": <Wrench className="w-6 h-6" />,
+  "Construction": <Hammer className="w-6 h-6" />,
+  "Home Repair": <Home className="w-6 h-6" />,
+};
+
+// Color schemes for categories
+const colorSchemes = [
+  { 
+    color: "text-blue-600",
+    gradient: "from-blue-500 to-cyan-500",
+  },
+  { 
+    color: "text-yellow-600",
+    gradient: "from-yellow-500 to-amber-500",
+  },
+  { 
+    color: "text-teal-600",
+    gradient: "from-teal-500 to-emerald-500",
+  },
+  { 
+    color: "text-green-600",
+    gradient: "from-green-500 to-lime-500",
+  },
+  { 
+    color: "text-purple-600",
+    gradient: "from-purple-500 to-pink-500",
+  },
+  { 
+    color: "text-amber-600",
+    gradient: "from-amber-500 to-orange-500",
+  },
+  { 
+    color: "text-red-600",
+    gradient: "from-red-500 to-rose-500",
+  },
+  { 
+    color: "text-indigo-600",
+    gradient: "from-indigo-500 to-purple-500",
+  },
+];
 
 export default function PopularServices(): React.ReactElement {
+  const router = useRouter();
   const [isMounted, setIsMounted] = useState(false);
   const [hoveredCard, setHoveredCard] = useState<number | null>(null);
+  const [categories, setCategories] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     setIsMounted(true);
+    loadCategories();
   }, []);
 
-  const services = [
-    { 
-      name: "Plumbing", 
-      icon: <Droplets className="w-6 h-6" />, 
-      providers: 150,
-      rating: 4.8,
-      color: "text-blue-600",
-      gradient: "from-blue-500 to-cyan-500",
-      bgGradient: "from-blue-50 to-cyan-50",
-      darkGradient: "from-blue-600 to-cyan-600"
-    },
-    { 
-      name: "Electrical", 
-      icon: <Lightbulb className="w-6 h-6" />, 
-      providers: 120,
-      rating: 4.9,
-      color: "text-yellow-600",
-      gradient: "from-yellow-500 to-amber-500",
-      bgGradient: "from-yellow-50 to-amber-50",
-      darkGradient: "from-yellow-600 to-amber-600"
-    },
-    { 
-      name: "Cleaning", 
-      icon: <Sparkles className="w-6 h-6" />, 
-      providers: 200,
-      rating: 4.7,
-      color: "text-teal-600",
-      gradient: "from-teal-500 to-emerald-500",
-      bgGradient: "from-teal-50 to-emerald-50",
-      darkGradient: "from-teal-600 to-emerald-600"
-    },
-    { 
-      name: "Gardening", 
-      icon: <Sprout className="w-6 h-6" />, 
-      providers: 80,
-      rating: 4.6,
-      color: "text-green-600",
-      gradient: "from-green-500 to-lime-500",
-      bgGradient: "from-green-50 to-lime-50",
-      darkGradient: "from-green-600 to-lime-600"
-    },
-    { 
-      name: "Painting", 
-      icon: <Palette className="w-6 h-6" />, 
-      providers: 95,
-      rating: 4.8,
-      color: "text-purple-600",
-      gradient: "from-purple-500 to-pink-500",
-      bgGradient: "from-purple-50 to-pink-50",
-      darkGradient: "from-purple-600 to-pink-600"
-    },
-    { 
-      name: "Carpentry", 
-      icon: <Drill className="w-6 h-6" />, 
-      providers: 110,
-      rating: 4.9,
-      color: "text-amber-600",
-      gradient: "from-amber-500 to-orange-500",
-      bgGradient: "from-amber-50 to-orange-50",
-      darkGradient: "from-amber-600 to-orange-600"
-    },
-  ];
+  const loadCategories = async () => {
+    try {
+      const data = await categoriesService.getAllCategories();
+      // Take top 6 categories or all if less than 6
+      setCategories(data.slice(0, 6));
+    } catch (error) {
+      console.error('Failed to load categories:', error);
+      // Keep empty array on error
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getIcon = (categoryName: string) => {
+    return iconMap[categoryName] || <Wrench className="w-6 h-6" />;
+  };
+
+  const getColorScheme = (index: number) => {
+    return colorSchemes[index % colorSchemes.length];
+  };
+
+  const handleCategoryClick = (categoryId: number) => {
+    router.push(`/categories/${categoryId}/servicemen`);
+  };
 
   return (
     <section className="position-relative py-5 overflow-hidden bg-white">
@@ -127,143 +149,151 @@ export default function PopularServices(): React.ReactElement {
         </div>
 
         {/* Services Grid */}
-        <div className="row g-4 justify-content-center">
-          {services.map((service, index) => (
-            <div key={index} className="col-6 col-md-4 col-lg-2">
-              <div 
-                className="card h-100 border-0 position-relative overflow-hidden transition-all duration-500 popular-service-card"
-                style={{ 
-                  minHeight: "240px",
-                  background: "linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.85) 100%)",
-                  backdropFilter: "blur(10px)",
-                  boxShadow: "0 4px 24px rgba(0,0,0,0.08), 0 1px 4px rgba(0,0,0,0.04)",
-                  border: "1px solid rgba(255,255,255,0.6)",
-                  transform: hoveredCard === index ? "translateY(-12px) scale(1.02)" : "translateY(0) scale(1)"
-                }}
-                onMouseEnter={() => setHoveredCard(index)}
-                onMouseLeave={() => setHoveredCard(null)}
-              >
-                {/* Gradient Overlay on Hover */}
-                <div 
-                  className={`position-absolute inset-0 bg-gradient-to-br ${service.gradient} opacity-0 transition-all duration-500 rounded-2xl ${
-                    hoveredCard === index ? 'opacity-5' : ''
-                  }`}
-                />
-
-                {/* Animated Border */}
-                <div 
-                  className={`position-absolute inset-0 bg-gradient-to-r ${service.gradient} opacity-0 transition-all duration-500 rounded-2xl border-animation ${
-                    hoveredCard === index ? 'opacity-100' : ''
-                  }`}
-                  style={{
-                    padding: '2px',
-                    WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
-                    WebkitMaskComposite: 'xor',
-                    maskComposite: 'exclude'
-                  }}
-                />
-
-                <div className="card-body text-center p-4 d-flex flex-column justify-content-between position-relative z-1">
-                  {/* Icon Section */}
-                  <div className="flex-grow-1 d-flex flex-column justify-content-center">
+        {loading ? (
+          <div className="text-center py-5">
+            <div className="spinner-border text-primary" role="status">
+              <span className="visually-hidden">Loading...</span>
+            </div>
+          </div>
+        ) : (
+          <div className="row g-4 justify-content-center">
+            {categories.map((category, index) => {
+              const colorScheme = getColorScheme(index);
+              return (
+                <div key={category.id} className="col-6 col-md-4 col-lg-2">
+                  <div 
+                    className="card h-100 border-0 position-relative overflow-hidden transition-all duration-500 popular-service-card"
+                    style={{ 
+                      minHeight: "240px",
+                      background: "linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.85) 100%)",
+                      backdropFilter: "blur(10px)",
+                      boxShadow: "0 4px 24px rgba(0,0,0,0.08), 0 1px 4px rgba(0,0,0,0.04)",
+                      border: "1px solid rgba(255,255,255,0.6)",
+                      transform: hoveredCard === index ? "translateY(-12px) scale(1.02)" : "translateY(0) scale(1)",
+                      cursor: "pointer"
+                    }}
+                    onMouseEnter={() => setHoveredCard(index)}
+                    onMouseLeave={() => setHoveredCard(null)}
+                    onClick={() => handleCategoryClick(category.id)}
+                  >
+                    {/* Gradient Overlay on Hover */}
                     <div 
-                      className={`mx-auto rounded-2xl d-flex align-items-center justify-content-center mb-4 transition-all duration-500 ${
-                        hoveredCard === index ? 'scale-110 rotate-6' : ''
+                      className={`position-absolute inset-0 bg-gradient-to-br ${colorScheme.gradient} opacity-0 transition-all duration-500 rounded-2xl ${
+                        hoveredCard === index ? 'opacity-5' : ''
+                      }`}
+                    />
+
+                    {/* Animated Border */}
+                    <div 
+                      className={`position-absolute inset-0 bg-gradient-to-r ${colorScheme.gradient} opacity-0 transition-all duration-500 rounded-2xl border-animation ${
+                        hoveredCard === index ? 'opacity-100' : ''
                       }`}
                       style={{
-                        width: "70px",
-                        height: "70px",
-                        background: hoveredCard === index 
-                          ? `linear-gradient(135deg, var(--tw-gradient-from), var(--tw-gradient-to))`
-                          : "linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.7) 100%)",
-                        boxShadow: hoveredCard === index 
-                          ? "0 8px 32px rgba(0,0,0,0.15), inset 0 1px 1px rgba(255,255,255,0.8)"
-                          : "0 4px 20px rgba(0,0,0,0.08), inset 0 1px 1px rgba(255,255,255,0.8)",
-                        border: "1px solid rgba(255,255,255,0.4)"
+                        padding: '2px',
+                        WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
+                        WebkitMaskComposite: 'xor',
+                        maskComposite: 'exclude'
                       }}
-                    >
-                      <div 
-                        className={`transition-all duration-500 ${
-                          hoveredCard === index ? 'scale-110 text-white' : service.color
-                        }`}
-                      >
-                        {service.icon}
+                    />
+
+                    <div className="card-body text-center p-4 d-flex flex-column justify-content-between position-relative z-1">
+                      {/* Icon Section */}
+                      <div className="flex-grow-1 d-flex flex-column justify-content-center">
+                        <div 
+                          className={`mx-auto rounded-2xl d-flex align-items-center justify-content-center mb-4 transition-all duration-500 ${
+                            hoveredCard === index ? 'scale-110 rotate-6' : ''
+                          }`}
+                          style={{
+                            width: "70px",
+                            height: "70px",
+                            background: hoveredCard === index 
+                              ? `linear-gradient(135deg, var(--tw-gradient-from), var(--tw-gradient-to))`
+                              : "linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.7) 100%)",
+                            boxShadow: hoveredCard === index 
+                              ? "0 8px 32px rgba(0,0,0,0.15), inset 0 1px 1px rgba(255,255,255,0.8)"
+                              : "0 4px 20px rgba(0,0,0,0.08), inset 0 1px 1px rgba(255,255,255,0.8)",
+                            border: "1px solid rgba(255,255,255,0.4)"
+                          }}
+                        >
+                          <div 
+                            className={`transition-all duration-500 ${
+                              hoveredCard === index ? 'scale-110 text-white' : colorScheme.color
+                            }`}
+                          >
+                            {getIcon(category.name)}
+                          </div>
+                        </div>
+
+                        {/* Content */}
+                        <h5 
+                          className="card-title fw-semibold mb-2 transition-colors duration-300"
+                          style={{ 
+                            fontSize: "1rem",
+                            color: hoveredCard === index ? '#1f2937' : '#374151'
+                          }}
+                        >
+                          {category.name}
+                        </h5>
+                        
+                        {/* Servicemen count */}
+                        <p 
+                          className="card-text small transition-colors duration-300 mb-3"
+                          style={{
+                            color: hoveredCard === index ? '#6b7280' : '#9ca3af'
+                          }}
+                        >
+                          {category.serviceman_count || 0} {category.serviceman_count === 1 ? 'provider' : 'providers'}
+                        </p>
+                      </div>
+
+                      {/* CTA Button */}
+                      <div className="mt-auto">
+                        <button 
+                          className={`btn btn-sm w-100 border-0 transition-all duration-300 ${
+                            hoveredCard === index 
+                              ? `bg-gradient-to-r ${colorScheme.gradient} text-white shadow-lg` 
+                              : 'bg-gray-100 text-gray-600'
+                          }`}
+                          style={{
+                            fontSize: '0.75rem',
+                            borderRadius: '12px',
+                            padding: '8px 12px'
+                          }}
+                        >
+                          <span className="d-flex align-items-center justify-content-center gap-1">
+                            Explore
+                            <ArrowRight className="w-3 h-3" />
+                          </span>
+                        </button>
                       </div>
                     </div>
 
-                    {/* Content */}
-                    <h5 
-                      className="card-title fw-semibold mb-2 transition-colors duration-300"
-                      style={{ 
-                        fontSize: "1rem",
-                        color: hoveredCard === index ? '#1f2937' : '#374151'
-                      }}
-                    >
-                      {service.name}
-                    </h5>
-                    
-                    {/* Rating */}
-                    <div className="d-flex align-items-center justify-content-center gap-1 mb-2">
-                      <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
-                      <small className="fw-semibold text-gray-700">{service.rating}</small>
-                    </div>
-
-                    <p 
-                      className="card-text small transition-colors duration-300 mb-3"
-                      style={{
-                        color: hoveredCard === index ? '#6b7280' : '#9ca3af'
-                      }}
-                    >
-                      {service.providers}+ providers
-                    </p>
-                  </div>
-
-                  {/* CTA Button */}
-                  <div className="mt-auto">
-                    <button 
-                      className={`btn btn-sm w-100 border-0 transition-all duration-300 ${
-                        hoveredCard === index 
-                          ? `bg-gradient-to-r ${service.gradient} text-white shadow-lg` 
-                          : 'bg-gray-100 text-gray-600'
-                      }`}
-                      style={{
-                        fontSize: '0.75rem',
-                        borderRadius: '12px',
-                        padding: '8px 12px'
-                      }}
-                    >
-                      <span className="d-flex align-items-center justify-content-center gap-1">
-                        Explore
-                        <ArrowRight className="w-3 h-3" />
-                      </span>
-                    </button>
+                    {/* Floating particles */}
+                    {isMounted && hoveredCard === index && (
+                      <div className="position-absolute inset-0 overflow-hidden rounded-2xl pointer-events-none">
+                        {[...Array(3)].map((_, i) => (
+                          <div
+                            key={i}
+                            className="absolute rounded-full opacity-0 animate-float-particle"
+                            style={{
+                              width: '8px',
+                              height: '8px',
+                              background: `linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.4) 100%)`,
+                              top: `${20 + i * 30}%`,
+                              left: `${20 + i * 20}%`,
+                              animationDelay: `${i * 0.3}s`,
+                              animationDuration: '3s'
+                            }}
+                          />
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
-
-                {/* Floating particles */}
-                {isMounted && hoveredCard === index && (
-                  <div className="position-absolute inset-0 overflow-hidden rounded-2xl pointer-events-none">
-                    {[...Array(3)].map((_, i) => (
-                      <div
-                        key={i}
-                        className="absolute rounded-full opacity-0 animate-float-particle"
-                        style={{
-                          width: '8px',
-                          height: '8px',
-                          background: `linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.4) 100%)`,
-                          top: `${20 + i * 30}%`,
-                          left: `${20 + i * 20}%`,
-                          animationDelay: `${i * 0.3}s`,
-                          animationDuration: '3s'
-                        }}
-                      />
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
+              );
+            })}
+          </div>
+        )}
 
         {/* CTA Section */}
         <div className="text-center mt-5 pt-3">
