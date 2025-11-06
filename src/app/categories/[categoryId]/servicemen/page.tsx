@@ -71,11 +71,12 @@ export default function CategoryServicemenPage({ params }: PageProps) {
       .filter((s: any) => {
         if (!q) return true;
         
-        // Extract user details from nested user object
-        const user = typeof s.user === 'object' ? s.user : null;
-        const full_name = (user as any)?.full_name || 
-                         (user?.first_name && user?.last_name ? `${user.first_name} ${user.last_name}` : '') ||
-                         user?.username || '';
+        // Handle both flattened structure (from category endpoint) and nested structure
+        const full_name = s.full_name || 
+                         (typeof s.user === 'object' ? (s.user as any)?.full_name : '') || 
+                         s.username ||
+                         (typeof s.user === 'object' ? s.user?.username : '') || 
+                         '';
         const bio = s.bio || '';
         
         return full_name.toLowerCase().includes(q) || bio.toLowerCase().includes(q);
@@ -102,13 +103,13 @@ export default function CategoryServicemenPage({ params }: PageProps) {
       ? servicemen.reduce((max: any, s: any) => (parseFloat(s.rating) || 0) > (parseFloat(max.rating) || 0) ? s : max, servicemen[0])
       : null;
     
-    // Extract top rated serviceman's name
+    // Extract top rated serviceman's name - handle both flattened and nested structures
     let topRatedName = '';
     if (topRated) {
-      const user = typeof topRated.user === 'object' ? topRated.user : null;
-      topRatedName = (user as any)?.full_name || 
-                    (user?.first_name && user?.last_name ? `${user.first_name} ${user.last_name}` : '') ||
-                    user?.username || 
+      topRatedName = topRated.full_name || 
+                    (typeof topRated.user === 'object' ? (topRated.user as any)?.full_name : '') ||
+                    topRated.username ||
+                    (typeof topRated.user === 'object' ? topRated.user?.username : '') ||
                     'Service Professional';
     }
 

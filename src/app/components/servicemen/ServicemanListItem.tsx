@@ -11,18 +11,29 @@ interface Props {
 export default function ServicemanListItem({ serviceman }: Props) {
   const router = useRouter();
   
-  // Extract user details
+  // Extract user details - handle both flattened structure (from category endpoint) and nested structure
   const user = typeof serviceman.user === 'object' ? serviceman.user : null;
-  const userId = typeof serviceman.user === 'object' ? serviceman.user.id : serviceman.user;
-  const full_name = (user as any)?.full_name || 
-                    (user?.first_name && user?.last_name ? `${user.first_name} ${user.last_name}` : user?.username) || 
+  
+  // For flattened structure (category endpoint), use serviceman.id directly
+  // For nested structure, extract from user object
+  const userId = (serviceman as any).user_id || // Check for user_id field first
+                 (serviceman as any).id || // Then check for direct id
+                 (typeof serviceman.user === 'object' ? serviceman.user.id : serviceman.user);
+  
+  const full_name = (serviceman as any).full_name || // Flattened structure
+                    (user as any)?.full_name || // Nested structure
+                    (user?.first_name && user?.last_name ? `${user.first_name} ${user.last_name}` : '') ||
+                    (serviceman as any).username || // Flattened structure
+                    user?.username || // Nested structure
                     'Service Professional';
+  
   const rating = parseFloat(serviceman.rating) || 0;
   const total_jobs_completed = serviceman.total_jobs_completed || 0;
   const years_of_experience = serviceman.years_of_experience || 0;
   const bio = serviceman.bio || '';
 
   const handleCardClick = () => {
+    console.log('🔍 Serviceman data:', { serviceman, userId, full_name });
     router.push(`/servicemen/${userId}`);
   };
 
