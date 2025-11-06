@@ -2,6 +2,7 @@ import "bootstrap/dist/css/bootstrap.min.css";
 import type { Metadata } from "next";
 import Script from "next/script";
 import { Geist, Geist_Mono } from "next/font/google";
+import { Suspense } from "react";
 import "./globals.css";
 import { AuthProvider } from './contexts/AuthContext';
 import { UserProvider } from './contexts/UserContext';
@@ -51,7 +52,9 @@ export default function RootLayout({
           <UserProvider>
             <NotificationProvider refreshInterval={60000}>
               <LoadingProvider>
-                <TopLoadingBar />
+                <Suspense fallback={null}>
+                  <TopLoadingBar />
+                </Suspense>
                 {children}
               </LoadingProvider>
             </NotificationProvider>
