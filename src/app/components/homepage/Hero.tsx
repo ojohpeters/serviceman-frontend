@@ -1,11 +1,20 @@
 "use client";
 import React, { useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Search, TrendingUp, Users, Star, Shield, Clock, CheckCircle } from "lucide-react";
 
 export default function HeroSection() {
+  const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchFocused, setIsSearchFocused] = useState(false);
+
+  const handleSearch = () => {
+    if (searchQuery.trim()) {
+      // Navigate to servicemen page with search query
+      router.push(`/servicemen?search=${encodeURIComponent(searchQuery.trim())}`);
+    }
+  };
 
   const features = [
     { icon: <Shield className="w-5 h-5" />, text: "Verified Professionals" },
@@ -92,8 +101,8 @@ export default function HeroSection() {
                 onFocus={() => setIsSearchFocused(true)}
                 onBlur={() => setIsSearchFocused(false)}
                 onKeyPress={(e) => {
-                  if (e.key === "Enter" && searchQuery.trim()) {
-                    console.log("Searching for:", searchQuery);
+                  if (e.key === "Enter") {
+                    handleSearch();
                   }
                 }}
                 style={{ 
@@ -102,7 +111,7 @@ export default function HeroSection() {
                 }}
               />
               <button
-                onClick={() => searchQuery.trim() && console.log("Searching for:", searchQuery)}
+                onClick={handleSearch}
                 className="btn btn-primary px-4 fw-semibold border-0"
                 style={{ 
                   background: "linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%)",
