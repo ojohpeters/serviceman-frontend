@@ -4,7 +4,6 @@ import { useRouter } from 'next/navigation';
 import { authService } from '../../services/auth';
 import { useAuth } from '../../contexts/AuthContext';
 import { useUser } from '../../contexts/UserContext';
-import LoginDebugger from '../../components/LoginDebugger';
 
 export default function AdminLoginPage() {
   const [username, setUsername] = useState('');
@@ -132,9 +131,6 @@ export default function AdminLoginPage() {
           </div>
         </div>
       </div>
-      
-      {/* Debug Component */}
-      <LoginDebugger />
     </div>
   );
 }

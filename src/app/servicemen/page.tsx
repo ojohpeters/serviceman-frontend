@@ -27,12 +27,13 @@ function ServicemenContent() {
   }, [searchParams]);
 
   // Fetch servicemen without search filter (let client-side handle search)
-  const backendFilters = {
+  // Use useMemo to prevent infinite loop by creating stable filter object
+  const backendFilters = useMemo(() => ({
     category: filters.category,
     is_available: filters.is_available,
     min_rating: filters.min_rating,
     ordering: filters.ordering
-  };
+  }), [filters.category, filters.is_available, filters.min_rating, filters.ordering]);
 
   const { servicemen: allServicemen, statistics, loading, error } = useServicemen(backendFilters);
 
