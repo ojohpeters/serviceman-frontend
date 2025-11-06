@@ -38,8 +38,14 @@ function ServicemenContent() {
 
   // Client-side filtering for partial search matching
   const servicemen = useMemo(() => {
-    if (!filters.search || !allServicemen.length) {
+    // If no search term, return all servicemen
+    if (!filters.search) {
       return allServicemen;
+    }
+
+    // If no servicemen to filter, return empty array
+    if (!allServicemen.length) {
+      return [];
     }
 
     const searchLower = filters.search.toLowerCase().trim();
@@ -102,7 +108,7 @@ function ServicemenContent() {
         <Nav />
       </div>
 
-      <div style={{ paddingTop: '80px', paddingBottom: '80px', minHeight: '100vh' }} className="bg-light">
+      <div style={{ paddingTop: '80px', paddingBottom: '120px', minHeight: '100vh' }} className="bg-light">
         <div className="container mt-4">
           {/* Header */}
           <div className="mb-4">

@@ -146,6 +146,14 @@ export default function ClientRegisterPage() {
         }}
       >
         <div className="container" style={{ maxWidth: "500px" }}>
+          {/* Back to Home Link */}
+          <div className="mb-3">
+            <a href="/" className="text-decoration-none text-muted d-flex align-items-center">
+              <i className="bi bi-arrow-left me-2"></i>
+              Back to Home
+            </a>
+          </div>
+
           <h2 className="mb-4">Create an account</h2>
 
           {error && (

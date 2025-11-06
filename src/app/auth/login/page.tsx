@@ -116,6 +116,14 @@ useEffect(() => {
         minHeight: '100vh'
       }}>
         <div className="container mt-5" style={{ maxWidth: "400px" }}>
+          {/* Back to Home Link */}
+          <div className="mb-3">
+            <a href="/" className="text-decoration-none text-muted d-flex align-items-center">
+              <i className="bi bi-arrow-left me-2"></i>
+              Back to Home
+            </a>
+          </div>
+          
           <h2 className="mb-4">Login</h2>
 
           {error && (
