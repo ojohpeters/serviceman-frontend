@@ -782,8 +782,8 @@ export default function ServiceRequestDetailPage() {
                       <>
                         {/* Client Contact */}
                         <div className="col-md-4 mb-3">
-                          <div className="p-3 bg-primary bg-opacity-10 rounded h-100 border border-primary">
-                            <h6 className="fw-bold mb-3 text-primary">
+                          <div className="p-3 bg-light rounded h-100 border">
+                            <h6 className="fw-bold mb-3 text-dark">
                               <i className="bi bi-person-circle me-2"></i>
                               Client
                             </h6>
@@ -801,24 +801,28 @@ export default function ServiceRequestDetailPage() {
                                     <small className="text-muted d-block">Name:</small>
                                     <strong className="text-break">{clientName}</strong>
                                   </div>
-                                  {clientEmail && (
-                                    <div className="mb-2">
-                                      <small className="text-muted d-block">Email:</small>
+                                  <div className="mb-2">
+                                    <small className="text-muted d-block">Email:</small>
+                                    {clientEmail ? (
                                       <a href={`mailto:${clientEmail}`} className="text-decoration-none text-break d-block" style={{ fontSize: '0.9rem' }}>
                                         {clientEmail}
                                       </a>
-                                    </div>
-                                  )}
-                                  {clientPhone && (
-                                    <div className="mb-2">
-                                      <small className="text-muted d-block">Phone:</small>
+                                    ) : (
+                                      <span className="text-muted" style={{ fontSize: '0.9rem' }}>Not provided</span>
+                                    )}
+                                  </div>
+                                  <div className="mb-2">
+                                    <small className="text-muted d-block">Phone Number:</small>
+                                    {clientPhone ? (
                                       <a href={`tel:${clientPhone}`} className="text-decoration-none">
                                         {clientPhone}
                                       </a>
-                                    </div>
-                                  )}
+                                    ) : (
+                                      <span className="text-muted" style={{ fontSize: '0.9rem' }}>Not provided</span>
+                                    )}
+                                  </div>
                                   <div className="mb-0">
-                                    <small className="text-muted d-block">Address:</small>
+                                    <small className="text-muted d-block">Service Address:</small>
                                     <span className="text-break" style={{ fontSize: '0.9rem' }}>{serviceRequest.client_address}</span>
                                   </div>
                                 </>
@@ -993,17 +997,20 @@ export default function ServiceRequestDetailPage() {
                     {/* Serviceman sees client contact */}
                     {user?.user_type === 'SERVICEMAN' && (
                       <div className="col-md-6 mb-3">
-                        <div className="p-3 bg-primary bg-opacity-10 rounded h-100 border border-primary">
-                          <h6 className="fw-bold mb-3 text-primary">
+                        <div className="p-3 bg-light rounded h-100 border border-secondary">
+                          <h6 className="fw-bold mb-3 text-dark">
                             <i className="bi bi-person-circle me-2"></i>
                             Client Contact
                           </h6>
                           {(() => {
                             const client = serviceRequest.client as any;
+                            console.log('👤 [Serviceman View] Client data:', client);
                             const clientName = typeof client === 'object' 
                               ? (client.full_name || client.username || 'Client')
                               : 'Client';
+                            const clientEmail = typeof client === 'object' ? client.email : '';
                             const clientPhone = typeof client === 'object' ? client.phone_number : '';
+                            console.log('📞 [Serviceman View] Client phone:', clientPhone);
                             
                             return (
                               <>
@@ -1012,13 +1019,23 @@ export default function ServiceRequestDetailPage() {
                                   <strong className="text-break">{clientName}</strong>
                                 </div>
                                 <div className="mb-2">
+                                  <small className="text-muted d-block">Email:</small>
+                                  {clientEmail ? (
+                                    <a href={`mailto:${clientEmail}`} className="text-decoration-none text-break d-block" style={{ fontSize: '0.9rem' }}>
+                                      {clientEmail}
+                                    </a>
+                                  ) : (
+                                    <span className="text-muted" style={{ fontSize: '0.9rem' }}>Not provided</span>
+                                  )}
+                                </div>
+                                <div className="mb-2">
                                   <small className="text-muted d-block">Service Address:</small>
                                   <span className="text-break" style={{ fontSize: '0.9rem' }}>{serviceRequest.client_address}</span>
                                 </div>
                                 <div className="mb-0">
                                   <small className="text-muted d-block">Phone Number:</small>
                                   {clientPhone ? (
-                                    <a href={`tel:${clientPhone}`} className="btn btn-sm btn-primary">
+                                    <a href={`tel:${clientPhone}`} className="btn btn-sm btn-dark">
                                       <i className="bi bi-telephone me-1"></i>
                                       {clientPhone}
                                     </a>
